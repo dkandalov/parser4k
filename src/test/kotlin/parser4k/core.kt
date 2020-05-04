@@ -79,7 +79,7 @@ fun <T> orWithPrecedence(vararg parsers: Parser<T>) = object : Parser<T> {
     override fun parse(input: Input): Output<T>? {
         parsers.drop(index).forEachIndexed { parserIndex, parser ->
             val lastIndex = index
-            index = parserIndex
+            index = if (parser is ResetPrecedence) 0 else parserIndex
 
             val output = parser.parse(input)
 
@@ -88,6 +88,12 @@ fun <T> orWithPrecedence(vararg parsers: Parser<T>) = object : Parser<T> {
         }
         return null
     }
+}
+
+fun <T> Parser<T>.resetPrecedence() = ResetPrecedence(this)
+
+class ResetPrecedence<T>(private val parser: Parser<T>) : Parser<T> {
+    override fun parse(input: Input) = parser.parse(input)
 }
 
 fun <T1> inOrder(parser1: Parser<T1>) =
@@ -372,13 +378,21 @@ class PlusMinusWithRecursionParserTests {
 class PlusMultiplyParserTests {
     private val numberTerm = regex("\\d+").map { NumberLiteral(it.toInt()) }
 
+    private val parenExpression = inOrder(token("("), ref { expression }, token(")"))
+        .map { (_, expression, _) -> expression }
+
     private val multiplyExpression = inOrder(leftRef { expression }, token("*"), ref { expression })
         .map { (left, _, right) -> MultiplyExpression(left, right) }
 
     private val plusExpression = inOrder(leftRef { expression }, token("+"), ref { expression })
         .map { (left, _, right) -> PlusExpression(left, right) }
 
-    private val expression: Parser<Expression> = orWithPrecedence(plusExpression, multiplyExpression, numberTerm)
+    private val expression: Parser<Expression> = orWithPrecedence(
+        plusExpression,
+        multiplyExpression,
+        parenExpression.resetPrecedence(),
+        numberTerm
+    )
 
     @Test fun `valid input`() {
         "123" shouldParseTo NumberLiteral(123)
@@ -399,6 +413,28 @@ class PlusMultiplyParserTests {
         "1 * 2 + 3" shouldParseTo PlusExpression(
             MultiplyExpression(NumberLiteral(1), NumberLiteral(2)),
             NumberLiteral(3)
+        )
+
+        "(123)" shouldParseTo NumberLiteral(123)
+        "((123))" shouldParseTo NumberLiteral(123)
+        "(1 * 2) + 3" shouldParseTo PlusExpression(
+            MultiplyExpression(NumberLiteral(1), NumberLiteral(2)),
+            NumberLiteral(3)
+        )
+        "1 * (2 + 3)" shouldParseTo MultiplyExpression(
+            NumberLiteral(1),
+            PlusExpression(NumberLiteral(2), NumberLiteral(3))
+        )
+        "1 * (2 + 3)" shouldParseTo MultiplyExpression(
+            NumberLiteral(1),
+            PlusExpression(NumberLiteral(2), NumberLiteral(3))
+        )
+        "1 * (2 + 3) + 4" shouldParseTo PlusExpression(
+            MultiplyExpression(
+                NumberLiteral(1),
+                PlusExpression(NumberLiteral(2), NumberLiteral(3))
+            ),
+            NumberLiteral(4)
         )
     }
 
