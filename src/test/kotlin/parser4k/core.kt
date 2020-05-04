@@ -63,7 +63,9 @@ fun <T> repeat(parser: Parser<T>, atLeast: Int = 0) = object : Parser<List<T>> {
     }
 }
 
-fun <T> or(vararg parsers: Parser<T>) = object : Parser<T> {
+fun <T> or(vararg parsers: Parser<T>): Parser<T> = or(parsers.toList())
+
+fun <T> or(parsers: List<Parser<T>>) = object : Parser<T> {
     override fun parse(input: Input): Output<T>? {
         parsers.forEach { parser ->
             val output = parser.parse(input)
@@ -73,11 +75,13 @@ fun <T> or(vararg parsers: Parser<T>) = object : Parser<T> {
     }
 }
 
-fun <T> orWithPrecedence(vararg parsers: Parser<T>) = object : Parser<T> {
+fun <T> orWithPrecedence(vararg parsers: Parser<T>): Parser<T> = orWithPrecedence(parsers.toList())
+
+fun <T> orWithPrecedence(parsers: List<Parser<T>>) = object : Parser<T> {
     var index = 0
 
     override fun parse(input: Input): Output<T>? {
-        parsers.drop(index).forEachIndexed { parserIndex, parser ->
+        parsers.subList(index, parsers.size).forEachIndexed { parserIndex, parser ->
             val lastIndex = index
             index = if (parser is ResetPrecedence) 0 else parserIndex
 
@@ -149,6 +153,14 @@ fun <T, R> Parser<T>.map(f: (T) -> R) = object : Parser<R> {
     override fun parse(input: Input): Output<R>? {
         val (payload, nextInput) = this@map.parse(input) ?: return null
         return Output(f(payload), nextInput)
+    }
+}
+
+fun <A, B, R> Parser<List3<A, *, B>>.mapAsBinary(f: (A, B) -> R) = object : Parser<R> {
+    override fun parse(input: Input): Output<R>? {
+        val (payload, nextInput) = this@mapAsBinary.parse(input) ?: return null
+        val (left, _, right) = payload
+        return Output(f(left, right), nextInput)
     }
 }
 
@@ -378,14 +390,11 @@ class PlusMinusWithRecursionParserTests {
 class PlusMultiplyParserTests {
     private val numberTerm = regex("\\d+").map { Number(it.toInt()) }
 
-    private val parenExpression = inOrder(token("("), ref { expression }, token(")"))
-        .map { (_, expression, _) -> expression }
+    private val parenExpression = inOrder(token("("), ref { expression }, token(")")).map { (_, it, _) -> it }
 
-    private val multiplyExpression = inOrder(leftRef { expression }, token("*"), ref { expression })
-        .map { (left, _, right) -> Multiply(left, right) }
+    private val multiplyExpression = inOrder(leftRef { expression }, token("*"), ref { expression }).mapAsBinary(::Multiply)
 
-    private val plusExpression = inOrder(leftRef { expression }, token("+"), ref { expression })
-        .map { (left, _, right) -> Plus(left, right) }
+    private val plusExpression = inOrder(leftRef { expression }, token("+"), ref { expression }).mapAsBinary(::Plus)
 
     private val expression: Parser<Expression> = orWithPrecedence(
         plusExpression,
