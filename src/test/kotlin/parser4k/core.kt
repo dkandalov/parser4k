@@ -1,10 +1,10 @@
 package parser4k
 
 import parser4k.CommonParsers.token
-import parser4k.Expression.MinusExpression
-import parser4k.Expression.MultiplyExpression
-import parser4k.Expression.NumberLiteral
-import parser4k.Expression.PlusExpression
+import parser4k.Expression.Minus
+import parser4k.Expression.Multiply
+import parser4k.Expression.Number
+import parser4k.Expression.Plus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.fail
@@ -276,10 +276,10 @@ class InOrderParserTests {
 }
 
 sealed class Expression {
-    data class NumberLiteral(val value: Int) : Expression()
-    data class PlusExpression(val left: Expression, val right: Expression) : Expression()
-    data class MinusExpression(val left: Expression, val right: Expression) : Expression()
-    data class MultiplyExpression(val left: Expression, val right: Expression) : Expression()
+    data class Number(val value: Int) : Expression()
+    data class Plus(val left: Expression, val right: Expression) : Expression()
+    data class Minus(val left: Expression, val right: Expression) : Expression()
+    data class Multiply(val left: Expression, val right: Expression) : Expression()
 }
 
 object CommonParsers {
@@ -290,30 +290,30 @@ object CommonParsers {
 }
 
 class PlusMinusParserTests {
-    private val numberTerm = regex("\\d+").map { NumberLiteral(it.toInt()) }
+    private val numberTerm = regex("\\d+").map { Number(it.toInt()) }
 
     private val expression = inOrder(numberTerm, repeat(inOrder(or(token("+"), token("-")), numberTerm)))
         .map { (first, rest) ->
             rest.fold(first as Expression) { left, (operator, right) ->
                 when (operator) {
-                    "+"  -> PlusExpression(left, right)
-                    "-"  -> MinusExpression(left, right)
+                    "+"  -> Plus(left, right)
+                    "-"  -> Minus(left, right)
                     else -> error("")
                 }
             }
         }
 
     @Test fun `valid input`() {
-        "123" shouldParseTo NumberLiteral(123)
-        "1 + 2" shouldParseTo PlusExpression(NumberLiteral(1), NumberLiteral(2))
-        "1 - 2" shouldParseTo MinusExpression(NumberLiteral(1), NumberLiteral(2))
-        "1 + 2 + 3" shouldParseTo PlusExpression(
-            PlusExpression(NumberLiteral(1), NumberLiteral(2)),
-            NumberLiteral(3)
+        "123" shouldParseTo Number(123)
+        "1 + 2" shouldParseTo Plus(Number(1), Number(2))
+        "1 - 2" shouldParseTo Minus(Number(1), Number(2))
+        "1 + 2 + 3" shouldParseTo Plus(
+            Plus(Number(1), Number(2)),
+            Number(3)
         )
-        "1 + 2 - 3" shouldParseTo MinusExpression(
-            PlusExpression(NumberLiteral(1), NumberLiteral(2)),
-            NumberLiteral(3)
+        "1 + 2 - 3" shouldParseTo Minus(
+            Plus(Number(1), Number(2)),
+            Number(3)
         )
     }
 
@@ -325,11 +325,11 @@ class PlusMinusParserTests {
 
     @Test fun `partial input`() {
         expression.parse(Input("1 + 2 +")) shouldEqual Output(
-            payload = PlusExpression(NumberLiteral(1), NumberLiteral(2)),
+            payload = Plus(Number(1), Number(2)),
             input = Input(s = "1 + 2 +", offset = 5)
         )
         expression.parse(Input("1 ++ 2")) shouldEqual Output(
-            payload = NumberLiteral(1),
+            payload = Number(1),
             input = Input(s = "1 ++ 2", offset = 1)
         )
     }
@@ -339,35 +339,35 @@ class PlusMinusParserTests {
 }
 
 class PlusMinusWithRecursionParserTests {
-    private val numberTerm = regex("\\d+").map { NumberLiteral(it.toInt()) }
+    private val numberTerm = regex("\\d+").map { Number(it.toInt()) }
 
     private val plusExpression = inOrder(leftRef { expression }, token("+"), ref { expression })
-        .map { (left, _, right) -> PlusExpression(left, right) }
+        .map { (left, _, right) -> Plus(left, right) }
 
     private val minusExpression = inOrder(leftRef { expression }, token("-"), ref { expression })
-        .map { (left, _, right) -> MinusExpression(left, right) }
+        .map { (left, _, right) -> Minus(left, right) }
 
     private val expression: Parser<Expression> = or(minusExpression, plusExpression, numberTerm)
 
     @Test fun `valid input`() {
-        "123" shouldParseTo NumberLiteral(123)
-        "1 + 2" shouldParseTo PlusExpression(NumberLiteral(1), NumberLiteral(2))
-        "1 - 2" shouldParseTo MinusExpression(NumberLiteral(1), NumberLiteral(2))
-        "1 + 2 + 3" shouldParseTo PlusExpression(
-            NumberLiteral(1),
-            PlusExpression(NumberLiteral(2), NumberLiteral(3))
+        "123" shouldParseTo Number(123)
+        "1 + 2" shouldParseTo Plus(Number(1), Number(2))
+        "1 - 2" shouldParseTo Minus(Number(1), Number(2))
+        "1 + 2 + 3" shouldParseTo Plus(
+            Number(1),
+            Plus(Number(2), Number(3))
         )
-        "1 - 2 - 3" shouldParseTo MinusExpression(
-            NumberLiteral(1),
-            MinusExpression(NumberLiteral(2), NumberLiteral(3))
+        "1 - 2 - 3" shouldParseTo Minus(
+            Number(1),
+            Minus(Number(2), Number(3))
         )
-        "1 + 2 - 3" shouldParseTo PlusExpression(
-            NumberLiteral(1),
-            MinusExpression(NumberLiteral(2), NumberLiteral(3))
+        "1 + 2 - 3" shouldParseTo Plus(
+            Number(1),
+            Minus(Number(2), Number(3))
         )
-        "1 - 2 + 3" shouldParseTo MinusExpression(
-            NumberLiteral(1),
-            PlusExpression(NumberLiteral(2), NumberLiteral(3))
+        "1 - 2 + 3" shouldParseTo Minus(
+            Number(1),
+            Plus(Number(2), Number(3))
         )
     }
 
@@ -376,16 +376,16 @@ class PlusMinusWithRecursionParserTests {
 }
 
 class PlusMultiplyParserTests {
-    private val numberTerm = regex("\\d+").map { NumberLiteral(it.toInt()) }
+    private val numberTerm = regex("\\d+").map { Number(it.toInt()) }
 
     private val parenExpression = inOrder(token("("), ref { expression }, token(")"))
         .map { (_, expression, _) -> expression }
 
     private val multiplyExpression = inOrder(leftRef { expression }, token("*"), ref { expression })
-        .map { (left, _, right) -> MultiplyExpression(left, right) }
+        .map { (left, _, right) -> Multiply(left, right) }
 
     private val plusExpression = inOrder(leftRef { expression }, token("+"), ref { expression })
-        .map { (left, _, right) -> PlusExpression(left, right) }
+        .map { (left, _, right) -> Plus(left, right) }
 
     private val expression: Parser<Expression> = orWithPrecedence(
         plusExpression,
@@ -395,46 +395,46 @@ class PlusMultiplyParserTests {
     )
 
     @Test fun `valid input`() {
-        "123" shouldParseTo NumberLiteral(123)
-        "1 + 2" shouldParseTo PlusExpression(NumberLiteral(1), NumberLiteral(2))
-        "1 * 2" shouldParseTo MultiplyExpression(NumberLiteral(1), NumberLiteral(2))
-        "1 + 2 + 3" shouldParseTo PlusExpression(
-            NumberLiteral(1),
-            PlusExpression(NumberLiteral(2), NumberLiteral(3))
+        "123" shouldParseTo Number(123)
+        "1 + 2" shouldParseTo Plus(Number(1), Number(2))
+        "1 * 2" shouldParseTo Multiply(Number(1), Number(2))
+        "1 + 2 + 3" shouldParseTo Plus(
+            Number(1),
+            Plus(Number(2), Number(3))
         )
-        "1 * 2 * 3" shouldParseTo MultiplyExpression(
-            NumberLiteral(1),
-            MultiplyExpression(NumberLiteral(2), NumberLiteral(3))
+        "1 * 2 * 3" shouldParseTo Multiply(
+            Number(1),
+            Multiply(Number(2), Number(3))
         )
-        "1 + 2 * 3" shouldParseTo PlusExpression(
-            NumberLiteral(1),
-            MultiplyExpression(NumberLiteral(2), NumberLiteral(3))
+        "1 + 2 * 3" shouldParseTo Plus(
+            Number(1),
+            Multiply(Number(2), Number(3))
         )
-        "1 * 2 + 3" shouldParseTo PlusExpression(
-            MultiplyExpression(NumberLiteral(1), NumberLiteral(2)),
-            NumberLiteral(3)
+        "1 * 2 + 3" shouldParseTo Plus(
+            Multiply(Number(1), Number(2)),
+            Number(3)
         )
 
-        "(123)" shouldParseTo NumberLiteral(123)
-        "((123))" shouldParseTo NumberLiteral(123)
-        "(1 * 2) + 3" shouldParseTo PlusExpression(
-            MultiplyExpression(NumberLiteral(1), NumberLiteral(2)),
-            NumberLiteral(3)
+        "(123)" shouldParseTo Number(123)
+        "((123))" shouldParseTo Number(123)
+        "(1 * 2) + 3" shouldParseTo Plus(
+            Multiply(Number(1), Number(2)),
+            Number(3)
         )
-        "1 * (2 + 3)" shouldParseTo MultiplyExpression(
-            NumberLiteral(1),
-            PlusExpression(NumberLiteral(2), NumberLiteral(3))
+        "1 * (2 + 3)" shouldParseTo Multiply(
+            Number(1),
+            Plus(Number(2), Number(3))
         )
-        "1 * (2 + 3)" shouldParseTo MultiplyExpression(
-            NumberLiteral(1),
-            PlusExpression(NumberLiteral(2), NumberLiteral(3))
+        "1 * (2 + 3)" shouldParseTo Multiply(
+            Number(1),
+            Plus(Number(2), Number(3))
         )
-        "1 * (2 + 3) + 4" shouldParseTo PlusExpression(
-            MultiplyExpression(
-                NumberLiteral(1),
-                PlusExpression(NumberLiteral(2), NumberLiteral(3))
+        "1 * (2 + 3) + 4" shouldParseTo Plus(
+            Multiply(
+                Number(1),
+                Plus(Number(2), Number(3))
             ),
-            NumberLiteral(4)
+            Number(4)
         )
     }
 
