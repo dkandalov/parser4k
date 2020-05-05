@@ -76,9 +76,23 @@ fun <T> or(parsers: List<Parser<T>>) = object : Parser<T> {
     }
 }
 
-fun <T> Parser<T>.cached(outputCache: HashMap<Pair<Parser<T>, Int>, Output<T>?>): Parser<T> = object : Parser<T> {
+class OutputCache<T> {
+    private val outputCache = HashMap<Pair<Parser<T>, Int>, Output<T>?>()
+
+    fun contains(key: Pair<Parser<T>, Int>) = outputCache.containsKey(key)
+
+    operator fun get(key: Pair<Parser<T>, Int>) = outputCache[key]
+
+    operator fun set(key: Pair<Parser<T>, Int>, output: Output<T>?) {
+        outputCache[key] = output
+    }
+
+    fun clear() = outputCache.clear()
+}
+
+fun <T> Parser<T>.with(outputCache: OutputCache<T>): Parser<T> = object : Parser<T> {
     override fun parse(input: Input): Output<T>? {
-        val parser = this@cached
+        val parser = this@with
         val pair = Pair(parser, input.offset)
         if (outputCache.contains(pair)) return outputCache[pair]
         outputCache[pair] = null // Mark parser at offset as work-in-progress
@@ -90,23 +104,17 @@ fun <T> Parser<T>.cached(outputCache: HashMap<Pair<Parser<T>, Int>, Output<T>?>)
     }
 }
 
-class OrCached<T>(parsers: List<Parser<T>>) : Parser<T> {
+fun <T> Parser<T>.reset(outputCache: OutputCache<T>) = object : Parser<T> {
     private var depth = 0
-    private val outputCache = HashMap<Pair<Parser<T>, Int>, Output<T>?>()
-    private val parser = or(parsers.map { it.cached(outputCache) })
 
     override fun parse(input: Input): Output<T>? {
         depth++
-        val output = parser.parse(input)
+        val output = this@reset.parse(input)
         depth--
         if (depth == 0) outputCache.clear()
         return output
     }
 }
-
-fun <T> orCached(vararg parsers: Parser<T>): Parser<T> = orCached(parsers.toList())
-
-fun <T> orCached(parsers: List<Parser<T>>) = OrCached(parsers)
 
 fun <T> orWithPrecedence(vararg parsers: Parser<T>): Parser<T> = orWithPrecedence(parsers.toList())
 
@@ -479,14 +487,15 @@ class PlusMultiplyParserTests {
 
 class ParserPerformanceTests {
     private val log = ArrayList<String>()
+    private val cache = OutputCache<Expression>()
 
     private val number = regex("\\d+").map { Number(it.toInt()) }
-    private val divide = inOrder(leftRef { expression }, token("/"), ref { expression }).logNoOutput("divide").mapAsBinary(::Divide)
-    private val multiply = inOrder(leftRef { expression }, token("*"), ref { expression }).logNoOutput("multiply").mapAsBinary(::Multiply)
-    private val minus = inOrder(leftRef { expression }, token("-"), ref { expression }).logNoOutput("minus").mapAsBinary(::Minus)
-    private val plus = inOrder(leftRef { expression }, token("+"), ref { expression }).logNoOutput("plus").mapAsBinary(::Plus)
+    private val divide = inOrder(leftRef { expression }, token("/"), ref { expression }).mapAsBinary(::Divide).logNoOutput("divide")
+    private val multiply = inOrder(leftRef { expression }, token("*"), ref { expression }).mapAsBinary(::Multiply).logNoOutput("multiply")
+    private val minus = inOrder(leftRef { expression }, token("-"), ref { expression }).mapAsBinary(::Minus).logNoOutput("minus")
+    private val plus = inOrder(leftRef { expression }, token("+"), ref { expression }).mapAsBinary(::Plus).logNoOutput("plus")
 
-    private val expression: Parser<Expression> = orCached(plus, minus, multiply, divide, number)
+    private val expression: Parser<Expression> = or(listOf(plus, minus, multiply, divide, number).map { it.with(cache) }).reset(cache)
 
     @Test fun `use each parser once at each input offset`() {
         expectMinimalLog { "1 + 2" shouldParseTo Plus(Number(1), Number(2)) }
