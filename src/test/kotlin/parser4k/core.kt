@@ -1,6 +1,7 @@
 package parser4k
 
 import parser4k.CommonParsers.token
+import parser4k.Expression.Divide
 import parser4k.Expression.Minus
 import parser4k.Expression.Multiply
 import parser4k.Expression.Number
@@ -21,11 +22,7 @@ import kotlin.test.fail
  * - multi-platform
  */
 
-data class Input(val s: String, val offset: Int = 0) {
-    fun read(n: Int): Pair<String, Input>? =
-        if (offset + n > s.length) null
-        else s.substring(offset, offset + n) to copy(offset = offset + n)
-}
+data class Input(val value: String, val offset: Int = 0)
 
 data class Output<out T>(val payload: T, val input: Input)
 
@@ -34,9 +31,13 @@ interface Parser<out T> {
 }
 
 fun str(s: String) = object : Parser<String> {
-    override fun parse(input: Input): Output<String>? {
-        val (token, nextInput) = input.read(s.length) ?: return null
-        return if (token != s) null else Output(token, nextInput)
+    override fun parse(input: Input): Output<String>? = input.run {
+        val newOffset = offset + s.length
+        if (newOffset > value.length) null
+        else {
+            val token = value.substring(offset, newOffset)
+            if (token == s) Output(token, copy(offset = newOffset)) else null
+        }
     }
 }
 
@@ -44,9 +45,9 @@ fun regex(pattern: String) = object : Parser<String> {
     val regex = pattern.toRegex()
 
     override fun parse(input: Input): Output<String>? {
-        val matchResult = regex.find(input.s, input.offset) ?: return null
+        val matchResult = regex.find(input.value, input.offset) ?: return null
         if (matchResult.range.first != input.offset) return null
-        return Output(input.s.substring(matchResult.range), input.copy(offset = matchResult.range.last + 1))
+        return Output(input.value.substring(matchResult.range), input.copy(offset = matchResult.range.last + 1))
     }
 }
 
@@ -74,6 +75,38 @@ fun <T> or(parsers: List<Parser<T>>) = object : Parser<T> {
         return null
     }
 }
+
+fun <T> Parser<T>.cached(outputCache: HashMap<Pair<Parser<T>, Int>, Output<T>?>): Parser<T> = object : Parser<T> {
+    override fun parse(input: Input): Output<T>? {
+        val parser = this@cached
+        val pair = Pair(parser, input.offset)
+        if (outputCache.contains(pair)) return outputCache[pair]
+        outputCache[pair] = null // Mark parser at offset as work-in-progress
+
+        val output = parser.parse(input)
+
+        outputCache[pair] = output
+        return output
+    }
+}
+
+class OrCached<T>(parsers: List<Parser<T>>) : Parser<T> {
+    private var depth = 0
+    private val outputCache = HashMap<Pair<Parser<T>, Int>, Output<T>?>()
+    private val parser = or(parsers.map { it.cached(outputCache) })
+
+    override fun parse(input: Input): Output<T>? {
+        depth++
+        val output = parser.parse(input)
+        depth--
+        if (depth == 0) outputCache.clear()
+        return output
+    }
+}
+
+fun <T> orCached(vararg parsers: Parser<T>): Parser<T> = orCached(parsers.toList())
+
+fun <T> orCached(parsers: List<Parser<T>>) = OrCached(parsers)
 
 fun <T> orWithPrecedence(vararg parsers: Parser<T>): Parser<T> = orWithPrecedence(parsers.toList())
 
@@ -292,6 +325,7 @@ sealed class Expression {
     data class Plus(val left: Expression, val right: Expression) : Expression()
     data class Minus(val left: Expression, val right: Expression) : Expression()
     data class Multiply(val left: Expression, val right: Expression) : Expression()
+    data class Divide(val left: Expression, val right: Expression) : Expression()
 }
 
 object CommonParsers {
@@ -338,11 +372,11 @@ class PlusMinusParserTests {
     @Test fun `partial input`() {
         expression.parse(Input("1 + 2 +")) shouldEqual Output(
             payload = Plus(Number(1), Number(2)),
-            input = Input(s = "1 + 2 +", offset = 5)
+            input = Input(value = "1 + 2 +", offset = 5)
         )
         expression.parse(Input("1 ++ 2")) shouldEqual Output(
             payload = Number(1),
-            input = Input(s = "1 ++ 2", offset = 1)
+            input = Input(value = "1 ++ 2", offset = 1)
         )
     }
 
@@ -352,13 +386,8 @@ class PlusMinusParserTests {
 
 class PlusMinusWithRecursionParserTests {
     private val numberTerm = regex("\\d+").map { Number(it.toInt()) }
-
-    private val plusExpression = inOrder(leftRef { expression }, token("+"), ref { expression })
-        .map { (left, _, right) -> Plus(left, right) }
-
-    private val minusExpression = inOrder(leftRef { expression }, token("-"), ref { expression })
-        .map { (left, _, right) -> Minus(left, right) }
-
+    private val plusExpression = inOrder(leftRef { expression }, token("+"), ref { expression }).mapAsBinary(::Plus)
+    private val minusExpression = inOrder(leftRef { expression }, token("-"), ref { expression }).mapAsBinary(::Minus)
     private val expression: Parser<Expression> = or(minusExpression, plusExpression, numberTerm)
 
     @Test fun `valid input`() {
@@ -389,11 +418,8 @@ class PlusMinusWithRecursionParserTests {
 
 class PlusMultiplyParserTests {
     private val numberTerm = regex("\\d+").map { Number(it.toInt()) }
-
     private val parenExpression = inOrder(token("("), ref { expression }, token(")")).map { (_, it, _) -> it }
-
     private val multiplyExpression = inOrder(leftRef { expression }, token("*"), ref { expression }).mapAsBinary(::Multiply)
-
     private val plusExpression = inOrder(leftRef { expression }, token("+"), ref { expression }).mapAsBinary(::Plus)
 
     private val expression: Parser<Expression> = orWithPrecedence(
@@ -451,12 +477,55 @@ class PlusMultiplyParserTests {
         assertEquals(expected, expression.parseAllInputOrFail(this))
 }
 
+class ParserPerformanceTests {
+    private val log = ArrayList<String>()
+
+    private val number = regex("\\d+").map { Number(it.toInt()) }
+    private val divide = inOrder(leftRef { expression }, token("/"), ref { expression }).logNoOutput("divide").mapAsBinary(::Divide)
+    private val multiply = inOrder(leftRef { expression }, token("*"), ref { expression }).logNoOutput("multiply").mapAsBinary(::Multiply)
+    private val minus = inOrder(leftRef { expression }, token("-"), ref { expression }).logNoOutput("minus").mapAsBinary(::Minus)
+    private val plus = inOrder(leftRef { expression }, token("+"), ref { expression }).logNoOutput("plus").mapAsBinary(::Plus)
+
+    private val expression: Parser<Expression> = orCached(plus, minus, multiply, divide, number)
+
+    @Test fun `use each parser once at each input offset`() {
+        expectMinimalLog { "1 + 2" shouldParseTo Plus(Number(1), Number(2)) }
+        expectMinimalLog { "1 - 2" shouldParseTo Minus(Number(1), Number(2)) }
+        expectMinimalLog { "1 * 2" shouldParseTo Multiply(Number(1), Number(2)) }
+        expectMinimalLog { "1 / 2" shouldParseTo Divide(Number(1), Number(2)) }
+        expectMinimalLog { "1" shouldParseTo Number(1) }
+    }
+
+    private infix fun String.shouldParseTo(expected: Expression) =
+        assertEquals(expected, expression.parseAllInputOrFail(this))
+
+    private fun expectMinimalLog(f: () -> Unit) {
+        log.clear()
+        f()
+        log.size shouldEqual log.distinct().size
+    }
+
+    private fun <T> Parser<T>.logNoOutput(parserId: String): Parser<T> {
+        return onNoOutput {
+            log.add("offset ${it.offset}: $parserId")
+        }
+    }
+
+    private fun <T> Parser<T>.onNoOutput(f: (Input) -> Unit) = object : Parser<T> {
+        override fun parse(input: Input): Output<T>? {
+            val output = this@onNoOutput.parse(input)
+            if (output == null) f(input)
+            return output
+        }
+    }
+}
+
 private infix fun Any?.shouldEqual(expected: Any?) =
     assertEquals(expected = expected, actual = this)
 
 private fun Parser<*>.parseAllInputOrFail(s: String): Any? {
     val (payload, input) = parse(Input(s)) ?: fail("Couldn't parse '$s'")
-    if (input.offset < input.s.length) {
+    if (input.offset < input.value.length) {
         fail(
             "Input was not fully consumed:\n" +
                 "$s\n" +
