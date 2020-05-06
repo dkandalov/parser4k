@@ -344,9 +344,9 @@ object CommonParsers {
 }
 
 class PlusMinusParserTests {
-    private val numberTerm = regex("\\d+").map { Number(it.toInt()) }
+    private val number = regex("\\d+").map { Number(it.toInt()) }
 
-    private val expression = inOrder(numberTerm, repeat(inOrder(or(token("+"), token("-")), numberTerm)))
+    private val expression = inOrder(number, repeat(inOrder(or(token("+"), token("-")), number)))
         .map { (first, rest) ->
             rest.fold(first as Expression) { left, (operator, right) ->
                 when (operator) {
@@ -393,10 +393,10 @@ class PlusMinusParserTests {
 }
 
 class PlusMinusWithRecursionParserTests {
-    private val numberTerm = regex("\\d+").map { Number(it.toInt()) }
-    private val plusExpression = inOrder(leftRef { expression }, token("+"), ref { expression }).mapAsBinary(::Plus)
-    private val minusExpression = inOrder(leftRef { expression }, token("-"), ref { expression }).mapAsBinary(::Minus)
-    private val expression: Parser<Expression> = or(minusExpression, plusExpression, numberTerm)
+    private val number = regex("\\d+").map { Number(it.toInt()) }
+    private val plus = inOrder(leftRef { expr }, token("+"), ref { expr }).mapAsBinary(::Plus)
+    private val minus = inOrder(leftRef { expr }, token("-"), ref { expr }).mapAsBinary(::Minus)
+    private val expr: Parser<Expression> = or(minus, plus, number)
 
     @Test fun `valid input`() {
         "123" shouldParseTo Number(123)
@@ -421,21 +421,16 @@ class PlusMinusWithRecursionParserTests {
     }
 
     private infix fun String.shouldParseTo(expected: Expression) =
-        assertEquals(expected, expression.parseAllInputOrFail(this))
+        assertEquals(expected, expr.parseAllInputOrFail(this))
 }
 
 class PlusMultiplyParserTests {
-    private val numberTerm = regex("\\d+").map { Number(it.toInt()) }
-    private val parenExpression = inOrder(token("("), ref { expression }, token(")")).map { (_, it, _) -> it }
-    private val multiplyExpression = inOrder(leftRef { expression }, token("*"), ref { expression }).mapAsBinary(::Multiply)
-    private val plusExpression = inOrder(leftRef { expression }, token("+"), ref { expression }).mapAsBinary(::Plus)
+    private val number = regex("\\d+").map { Number(it.toInt()) }
+    private val paren = inOrder(token("("), ref { expr }, token(")")).map { (_, it, _) -> it }
+    private val multiply = inOrder(leftRef { expr }, token("*"), ref { expr }).mapAsBinary(::Multiply)
+    private val plus = inOrder(leftRef { expr }, token("+"), ref { expr }).mapAsBinary(::Plus)
 
-    private val expression: Parser<Expression> = orWithPrecedence(
-        plusExpression,
-        multiplyExpression,
-        parenExpression.resetPrecedence(),
-        numberTerm
-    )
+    private val expr: Parser<Expression> = orWithPrecedence(plus, multiply, paren.resetPrecedence(), number)
 
     @Test fun `valid input`() {
         "123" shouldParseTo Number(123)
@@ -460,6 +455,7 @@ class PlusMultiplyParserTests {
 
         "(123)" shouldParseTo Number(123)
         "((123))" shouldParseTo Number(123)
+
         "(1 * 2) + 3" shouldParseTo Plus(
             Multiply(Number(1), Number(2)),
             Number(3)
@@ -468,21 +464,19 @@ class PlusMultiplyParserTests {
             Number(1),
             Plus(Number(2), Number(3))
         )
-        "1 * (2 + 3)" shouldParseTo Multiply(
-            Number(1),
-            Plus(Number(2), Number(3))
+        "((1 * 2) + 3)" shouldParseTo Plus(
+            Multiply(Number(1), Number(2)),
+            Number(3)
         )
-        "1 * (2 + 3) + 4" shouldParseTo Plus(
-            Multiply(
-                Number(1),
-                Plus(Number(2), Number(3))
-            ),
-            Number(4)
+
+        "(1 + 2) + (3 + 4)" shouldParseTo Plus(
+            Plus(Number(1), Number(2)),
+            Plus(Number(3), Number(4))
         )
     }
 
     private infix fun String.shouldParseTo(expected: Expression) =
-        assertEquals(expected, expression.parseAllInputOrFail(this))
+        assertEquals(expected, expr.parseAllInputOrFail(this))
 }
 
 class ParserPerformanceTests {
@@ -490,12 +484,12 @@ class ParserPerformanceTests {
     private val cache = OutputCache<Expression>()
 
     private val number = regex("\\d+").map { Number(it.toInt()) }
-    private val divide = inOrder(leftRef { expression }, token("/"), ref { expression }).mapAsBinary(::Divide).logNoOutput("divide")
-    private val multiply = inOrder(leftRef { expression }, token("*"), ref { expression }).mapAsBinary(::Multiply).logNoOutput("multiply")
-    private val minus = inOrder(leftRef { expression }, token("-"), ref { expression }).mapAsBinary(::Minus).logNoOutput("minus")
-    private val plus = inOrder(leftRef { expression }, token("+"), ref { expression }).mapAsBinary(::Plus).logNoOutput("plus")
+    private val divide = inOrder(ref { expr }, token("/"), ref { expr }).mapAsBinary(::Divide).logNoOutput("divide").with(cache)
+    private val multiply = inOrder(ref { expr }, token("*"), ref { expr }).mapAsBinary(::Multiply).logNoOutput("multiply").with(cache)
+    private val minus = inOrder(ref { expr }, token("-"), ref { expr }).mapAsBinary(::Minus).logNoOutput("minus").with(cache)
+    private val plus = inOrder(ref { expr }, token("+"), ref { expr }).mapAsBinary(::Plus).logNoOutput("plus").with(cache)
 
-    private val expression: Parser<Expression> = or(listOf(plus, minus, multiply, divide, number).map { it.with(cache) }).reset(cache)
+    private val expr: Parser<Expression> = or(plus, minus, multiply, divide, number).reset(cache)
 
     @Test fun `use each parser once at each input offset`() {
         expectMinimalLog { "1 + 2" shouldParseTo Plus(Number(1), Number(2)) }
@@ -506,7 +500,7 @@ class ParserPerformanceTests {
     }
 
     private infix fun String.shouldParseTo(expected: Expression) =
-        assertEquals(expected, expression.parseAllInputOrFail(this))
+        assertEquals(expected, expr.parseAllInputOrFail(this))
 
     private fun expectMinimalLog(f: () -> Unit) {
         log.clear()
