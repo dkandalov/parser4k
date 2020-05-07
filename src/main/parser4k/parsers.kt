@@ -1,5 +1,7 @@
 package parser4k
 
+import java.lang.RuntimeException
+
 fun str(s: String): Parser<String> = object : Parser<String> {
     override fun parse(input: Input): Output<String>? = input.run {
         val newOffset = offset + s.length
@@ -35,6 +37,10 @@ fun <T> repeat(parser: Parser<T>, atLeast: Int = 0, atMost: Int = Int.MAX_VALUE)
     }
 }
 
+fun <T> onceOrMore(parser: Parser<T>) = repeat(parser, atLeast = 1)
+
+fun <T> optional(parser: Parser<T>) = repeat(parser, atLeast = 0, atMost = 1)
+
 fun <T> or(vararg parsers: Parser<T>): Parser<T> = or(parsers.toList())
 
 fun <T> or(parsers: List<Parser<T>>) = object : Parser<T> {
@@ -55,7 +61,7 @@ fun <T> orWithPrecedence(parsers: List<Parser<T>>) = object : Parser<T> {
     override fun parse(input: Input): Output<T>? {
         parsers.subList(index, parsers.size).forEachIndexed { parserIndex, parser ->
             val lastIndex = index
-            index = if (parser is ResetPrecedence) 0 else parserIndex
+            index = if (parser is NestedPrecedence) 0 else parserIndex
 
             val output = parser.parse(input)
 
@@ -66,9 +72,9 @@ fun <T> orWithPrecedence(parsers: List<Parser<T>>) = object : Parser<T> {
     }
 }
 
-fun <T> Parser<T>.nestedPrecedence() = ResetPrecedence(this)
+fun <T> Parser<T>.nestedPrecedence() = NestedPrecedence(this)
 
-class ResetPrecedence<T>(private val parser: Parser<T>) : Parser<T> {
+class NestedPrecedence<T>(private val parser: Parser<T>) : Parser<T> {
     override fun parse(input: Input) = parser.parse(input)
 }
 
@@ -92,4 +98,22 @@ fun <T, R> Parser<T>.map(f: (T) -> R) = object : Parser<R> {
         val (payload, nextInput) = this@map.parse(input) ?: return null
         return Output(f(payload), nextInput)
     }
+}
+
+sealed class ParsingError(override val message: String) : RuntimeException(message)
+
+class NoMatchingParsers(override val message: String) : ParsingError(message)
+
+class InputIsNotConsumed(override val message: String) : ParsingError(message) {
+    constructor(output: Output<*>) : this(
+        "${output.input.value}\n" +
+            " ".repeat(output.input.offset) + "^\n" +
+            "payload = ${output.payload}"
+    )
+}
+
+fun <T> String.parseWith(parser: Parser<T>): T {
+    val output = parser.parse(Input(this)) ?: throw NoMatchingParsers(this)
+    if (output.input.offset < output.input.value.length) throw InputIsNotConsumed(output)
+    return output.payload
 }

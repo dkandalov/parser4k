@@ -7,7 +7,6 @@ import parser4k.CommonParsers.token
 import parser4k.calculatortests.Expression.*
 import parser4k.calculatortests.Expression.Number
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 
 sealed class Expression {
@@ -63,8 +62,7 @@ class NoneRecursiveParserTests {
         )
     }
 
-    private infix fun String.shouldParseTo(expected: Expression) =
-        assertEquals(expected, expression.parseAllInputOrFail(this))
+    private infix fun String.shouldParseTo(expected: Expression) = parseWith(expression) shouldEqual expected
 }
 
 class RecursiveParserTests {
@@ -94,8 +92,7 @@ class RecursiveParserTests {
         )
     }
 
-    private infix fun String.shouldParseTo(expected: Expression) =
-        assertEquals(expected, expr.parseAllInputOrFail(this))
+    private infix fun String.shouldParseTo(expected: Expression) = parseWith(expr) shouldEqual expected
 }
 
 class ParserPrecedenceTests {
@@ -161,8 +158,7 @@ class ParserPrecedenceTests {
         )
     }
 
-    private infix fun String.shouldParseTo(expected: Expression) =
-        assertEquals(expected, expr.parseAllInputOrFail(this))
+    private infix fun String.shouldParseTo(expected: Expression) = parseWith(expr) shouldEqual expected
 }
 
 class ParserPerformanceTests {
@@ -184,9 +180,6 @@ class ParserPerformanceTests {
         expectMinimalLog { "1" shouldParseTo Number(1) }
     }
 
-    private infix fun String.shouldParseTo(expected: Expression) =
-        assertEquals(expected, expr.parseAllInputOrFail(this))
-
     private fun expectMinimalLog(f: () -> Unit) {
         log.clear()
         f()
@@ -206,6 +199,8 @@ class ParserPerformanceTests {
             return output
         }
     }
+
+    private infix fun String.shouldParseTo(expected: Expression) = parseWith(expr) shouldEqual expected
 }
 
 private object Calculator {
@@ -225,20 +220,7 @@ private object Calculator {
         number
     ).reset(cache)
 
-    fun evaluate(s: String) = parse(s).evaluate()
-
-    fun parse(s: String): Expression {
-        val (payload, input) = expr.parse(Input(s)) ?: error("Couldn't parse '$s'")
-        if (input.offset < input.value.length) {
-            error(
-                "Input was not fully consumed:\n" +
-                "$s\n" +
-                " ".repeat(input.offset) + "^\n" +
-                "payload = $payload"
-            )
-        }
-        return payload
-    }
+    fun evaluate(s: String) = s.parseWith(expr).evaluate()
 
     private fun Expression.evaluate(): Int {
         return when (this) {
@@ -253,11 +235,34 @@ private object Calculator {
 
 
 class CalculatorTests {
-    @Test fun `it works`() {
+    @Test fun `valid input`() {
         Calculator.evaluate("1") shouldEqual 1
         Calculator.evaluate("1 + 1") shouldEqual 2
         Calculator.evaluate("1 + 2 + 3") shouldEqual 6
         Calculator.evaluate("1 + 2 * 3") shouldEqual 7
         Calculator.evaluate("1 + 2 * 3 - 4") shouldEqual 3
+        Calculator.evaluate("1 + 2 * 3 - 4 / 5") shouldEqual 7
+        Calculator.evaluate("(1 + 2) * 3 - 4 / 5") shouldEqual 9
+        Calculator.evaluate("(1 + 2) * (3 - 4) / 5") shouldEqual 0
+        Calculator.evaluate("((1 + 2) * 3 - 4) / 5") shouldEqual 1
+    }
+
+    @Test fun `large valid input`() {
+        Calculator.evaluate(List(1000) { "1" }.joinToString("+")) shouldEqual 1000
+    }
+
+    @Test fun `invalid input`() {
+        { Calculator.evaluate("+1") } shouldFailWith { it is NoMatchingParsers }
+        { Calculator.evaluate("()") } shouldFailWith  { it is NoMatchingParsers }
+        { Calculator.evaluate("(1))") } shouldFailWithMessage """
+            |(1))
+            |   ^
+            |payload = Number(value=1)
+        """
+        { Calculator.evaluate("1 + 2 + ") } shouldFailWithMessage """
+            |1 + 2 + 
+            |     ^
+            |payload = Plus(left=Number(value=1), right=Number(value=2))
+        """
     }
 }
