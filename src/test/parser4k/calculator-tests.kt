@@ -18,9 +18,9 @@ sealed class Expression {
     data class Divide(val left: Expression, val right: Expression): Expression()
 }
 
-class PlusMinusParserTests {
-    private val number = regex("\\d+").map { Number(it.toInt()) }
+private val number = regex("\\d+").map { Number(it.toInt()) }
 
+class NoneRecursiveParserTests {
     private val expression = inOrder(number, repeat(inOrder(or(token("+"), token("-")), number)))
         .map { (first, rest) ->
             rest.fold(first as Expression) { left, (operator, right) ->
@@ -67,8 +67,7 @@ class PlusMinusParserTests {
         assertEquals(expected, expression.parseAllInputOrFail(this))
 }
 
-class PlusMinusWithRecursionParserTests {
-    private val number = regex("\\d+").map { Number(it.toInt()) }
+class RecursiveParserTests {
     private val plus = inOrder(leftRef { expr }, token("+"), ref { expr }).mapAsBinary(::Plus)
     private val minus = inOrder(leftRef { expr }, token("-"), ref { expr }).mapAsBinary(::Minus)
     private val expr: Parser<Expression> = or(minus, plus, number)
@@ -99,8 +98,7 @@ class PlusMinusWithRecursionParserTests {
         assertEquals(expected, expr.parseAllInputOrFail(this))
 }
 
-class PlusMultiplyParserTests {
-    private val number = regex("\\d+").map { Number(it.toInt()) }
+class ParserPrecedenceTests {
     private val paren = inOrder(token("("), ref { expr }, token(")")).map { (_, it, _) -> it }
     private val multiply = inOrder(leftRef { expr }, token("*"), ref { expr }).mapAsBinary(::Multiply)
     private val plus = inOrder(leftRef { expr }, token("+"), ref { expr }).mapAsBinary(::Plus)
@@ -158,7 +156,6 @@ class ParserPerformanceTests {
     private val log = ArrayList<String>()
     private val cache = OutputCache<Expression>()
 
-    private val number = regex("\\d+").map { Number(it.toInt()) }
     private val divide = inOrder(ref { expr }, token("/"), ref { expr }).mapAsBinary(::Divide).logNoOutput("divide").with(cache)
     private val multiply = inOrder(ref { expr }, token("*"), ref { expr }).mapAsBinary(::Multiply).logNoOutput("multiply").with(cache)
     private val minus = inOrder(ref { expr }, token("-"), ref { expr }).mapAsBinary(::Minus).logNoOutput("minus").with(cache)
