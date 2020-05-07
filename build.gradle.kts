@@ -30,3 +30,7 @@ sourceSets["test"].withConvention(KotlinSourceSet::class) {
 tasks.withType<KotlinCompile>().configureEach {
     kotlinOptions.jvmTarget = "11"
 }
+tasks.withType<Test>().configureEach {
+    // Larger stack for performance tests on large inputs
+    jvmArgs("-Xss10M")
+}
