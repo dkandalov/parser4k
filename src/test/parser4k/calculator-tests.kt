@@ -102,8 +102,14 @@ class ParserPrecedenceTests {
     private val paren = inOrder(token("("), ref { expr }, token(")")).map { (_, it, _) -> it }
     private val multiply = inOrder(leftRef { expr }, token("*"), ref { expr }).mapAsBinary(::Multiply)
     private val plus = inOrder(leftRef { expr }, token("+"), ref { expr }).mapAsBinary(::Plus)
+    private val minus = inOrder(leftRef { expr }, token("-"), ref { expr }).mapAsBinary(::Minus)
 
-    private val expr: Parser<Expression> = orWithPrecedence(plus, multiply, paren.resetPrecedence(), number)
+    private val expr: Parser<Expression> = orWithPrecedence(
+        or(plus, minus),
+        multiply,
+        paren.nestedPrecedence(),
+        number
+    )
 
     @Test fun `valid input`() {
         "123" shouldParseTo Number(123)
@@ -117,13 +123,20 @@ class ParserPrecedenceTests {
             Number(1),
             Multiply(Number(2), Number(3))
         )
+        "1 * 2 + 3" shouldParseTo Plus(
+            Multiply(Number(1), Number(2)),
+            Number(3)
+        )
         "1 + 2 * 3" shouldParseTo Plus(
             Number(1),
             Multiply(Number(2), Number(3))
         )
-        "1 * 2 + 3" shouldParseTo Plus(
-            Multiply(Number(1), Number(2)),
-            Number(3)
+        "1 + 2 * 3 - 4" shouldParseTo Plus(
+            Number(1),
+            Minus(
+                Multiply(Number(2), Number(3)),
+                Number(4)
+            )
         )
 
         "(123)" shouldParseTo Number(123)
@@ -192,5 +205,59 @@ class ParserPerformanceTests {
             if (output == null) f(input)
             return output
         }
+    }
+}
+
+private object Calculator {
+    private val cache = OutputCache<Expression>()
+
+    private val number = regex("\\d+").map { Number(it.toInt()) }
+    private val paren = inOrder(token("("), ref { expr }, token(")")).map { (_, it, _) -> it }
+    private val divide = inOrder(ref { expr }, token("/"), ref { expr }).mapAsBinary(::Divide).with(cache)
+    private val multiply = inOrder(ref { expr }, token("*"), ref { expr }).mapAsBinary(::Multiply).with(cache)
+    private val minus = inOrder(ref { expr }, token("-"), ref { expr }).mapAsBinary(::Minus).with(cache)
+    private val plus = inOrder(ref { expr }, token("+"), ref { expr }).mapAsBinary(::Plus).with(cache)
+
+    private val expr: Parser<Expression> = orWithPrecedence(
+        or(plus, minus),
+        or(multiply, divide),
+        paren.nestedPrecedence(),
+        number
+    ).reset(cache)
+
+    fun evaluate(s: String) = parse(s).evaluate()
+
+    fun parse(s: String): Expression {
+        val (payload, input) = expr.parse(Input(s)) ?: error("Couldn't parse '$s'")
+        if (input.offset < input.value.length) {
+            error(
+                "Input was not fully consumed:\n" +
+                "$s\n" +
+                " ".repeat(input.offset) + "^\n" +
+                "payload = $payload"
+            )
+        }
+        return payload
+    }
+
+    private fun Expression.evaluate(): Int {
+        return when (this) {
+            is Number   -> value
+            is Plus     -> left.evaluate() + right.evaluate()
+            is Minus    -> left.evaluate() - right.evaluate()
+            is Multiply -> left.evaluate() * right.evaluate()
+            is Divide   -> left.evaluate() / right.evaluate()
+        }
+    }
+}
+
+
+class CalculatorTests {
+    @Test fun `it works`() {
+        Calculator.evaluate("1") shouldEqual 1
+        Calculator.evaluate("1 + 1") shouldEqual 2
+        Calculator.evaluate("1 + 2 + 3") shouldEqual 6
+        Calculator.evaluate("1 + 2 * 3") shouldEqual 7
+        Calculator.evaluate("1 + 2 * 3 - 4") shouldEqual 3
     }
 }

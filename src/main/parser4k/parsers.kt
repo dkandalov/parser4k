@@ -65,7 +65,7 @@ fun <T> orWithPrecedence(parsers: List<Parser<T>>) = object : Parser<T> {
     }
 }
 
-fun <T> Parser<T>.resetPrecedence() = ResetPrecedence(this)
+fun <T> Parser<T>.nestedPrecedence() = ResetPrecedence(this)
 
 class ResetPrecedence<T>(private val parser: Parser<T>) : Parser<T> {
     override fun parse(input: Input) = parser.parse(input)

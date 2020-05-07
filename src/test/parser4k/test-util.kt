@@ -10,10 +10,10 @@ fun Parser<*>.parseAllInputOrFail(s: String): Any? {
     val (payload, input) = parse(Input(s)) ?: fail("Couldn't parse '$s'")
     if (input.offset < input.value.length) {
         fail(
-            "parser4k.Input was not fully consumed:\n" +
-                "$s\n" +
-                " ".repeat(input.offset) + "^\n" +
-                "payload = $payload"
+            "Input was not fully consumed:\n" +
+            "$s\n" +
+            " ".repeat(input.offset) + "^\n" +
+            "payload = $payload"
         )
     }
     return payload
