@@ -21,7 +21,7 @@ fun regex(pattern: String) = object : Parser<String> {
     }
 }
 
-fun <T> repeat(parser: Parser<T>, atLeast: Int = 0) = object : Parser<List<T>> {
+fun <T> repeat(parser: Parser<T>, atLeast: Int = 0, atMost: Int = Int.MAX_VALUE) = object : Parser<List<T>> {
     override fun parse(input: Input): Output<List<T>>? {
         val payload = ArrayList<T>()
         var nextInput = input
@@ -29,6 +29,7 @@ fun <T> repeat(parser: Parser<T>, atLeast: Int = 0) = object : Parser<List<T>> {
             val output = parser.parse(nextInput) ?: break
             nextInput = output.input
             payload.add(output.payload)
+            if (payload.size == atMost) break
         }
         return if (payload.size >= atLeast) Output(payload, nextInput) else null
     }

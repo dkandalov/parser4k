@@ -16,5 +16,10 @@ class RepeatParserTests {
         repeat(str("a")).parse(Input("")) shouldEqual Output(emptyList<String>(), Input(""))
         repeat(str("a")).parse(Input("b")) shouldEqual Output(emptyList<String>(), Input("b"))
         repeat(str("a")).parse(Input("aaa")) shouldEqual Output(listOf("a", "a", "a"), Input("aaa", offset = 3))
+        repeat(str("a"), atLeast = 1).parse(Input("aaa")) shouldEqual Output(listOf("a", "a", "a"), Input("aaa", offset = 3))
+        repeat(str("a"), atLeast = 2).parse(Input("aaa")) shouldEqual Output(listOf("a", "a", "a"), Input("aaa", offset = 3))
+        repeat(str("a"), atMost = 1).parse(Input("aaa")) shouldEqual Output(listOf("a"), Input("aaa", offset = 1))
+        repeat(str("a"), atMost = 2).parse(Input("aaa")) shouldEqual Output(listOf("a", "a"), Input("aaa", offset = 2))
+        repeat(str("a"), atMost = 3).parse(Input("aaa")) shouldEqual Output(listOf("a", "a", "a"), Input("aaa", offset = 3))
     }
 }
