@@ -20,7 +20,7 @@ sealed class Expression {
 private val number = regex("\\d+").map { Number(it.toInt()) }
 
 class NoneRecursiveParserTests {
-    private val expression = inOrder(number, repeat(inOrder(or(token("+"), token("-")), number)))
+    private val expression = inOrder(number, repeat(inOrder(oneOf(token("+"), token("-")), number)))
         .map { (first, rest) ->
             rest.fold(first as Expression) { left, (operator, right) ->
                 when (operator) {
@@ -68,7 +68,7 @@ class NoneRecursiveParserTests {
 class RecursiveParserTests {
     private val plus = inOrder(leftRef { expr }, token("+"), ref { expr }).mapAsBinary(::Plus)
     private val minus = inOrder(leftRef { expr }, token("-"), ref { expr }).mapAsBinary(::Minus)
-    private val expr: Parser<Expression> = or(minus, plus, number)
+    private val expr: Parser<Expression> = oneOf(minus, plus, number)
 
     @Test fun `valid input`() {
         "123" shouldParseTo Number(123)
@@ -101,8 +101,8 @@ class ParserPrecedenceTests {
     private val plus = inOrder(leftRef { expr }, token("+"), ref { expr }).mapAsBinary(::Plus)
     private val minus = inOrder(leftRef { expr }, token("-"), ref { expr }).mapAsBinary(::Minus)
 
-    private val expr: Parser<Expression> = orWithPrecedence(
-        or(plus, minus),
+    private val expr: Parser<Expression> = oneOfWithPrecedence(
+        oneOf(plus, minus),
         multiply,
         paren.nestedPrecedence(),
         number
@@ -170,7 +170,7 @@ class ParserPerformanceTests {
     private val minus = inOrder(ref { expr }, token("-"), ref { expr }).mapAsBinary(::Minus).logNoOutput("minus").with(cache)
     private val plus = inOrder(ref { expr }, token("+"), ref { expr }).mapAsBinary(::Plus).logNoOutput("plus").with(cache)
 
-    private val expr: Parser<Expression> = or(plus, minus, multiply, divide, number).reset(cache)
+    private val expr: Parser<Expression> = oneOf(plus, minus, multiply, divide, number).reset(cache)
 
     @Test fun `use each parser once at each input offset`() {
         expectMinimalLog { "1 + 2" shouldParseTo Plus(Number(1), Number(2)) }
@@ -213,9 +213,9 @@ private object Calculator {
     private val minus = inOrder(ref { expr }, token("-"), ref { expr }).mapAsBinary(::Minus).with(cache)
     private val plus = inOrder(ref { expr }, token("+"), ref { expr }).mapAsBinary(::Plus).with(cache)
 
-    private val expr: Parser<Expression> = orWithPrecedence(
-        or(plus, minus),
-        or(multiply, divide),
+    private val expr: Parser<Expression> = oneOfWithPrecedence(
+        oneOf(plus, minus),
+        oneOf(multiply, divide),
         paren.nestedPrecedence(),
         number
     ).reset(cache)

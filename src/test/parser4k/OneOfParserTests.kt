@@ -2,9 +2,9 @@ package parser4k
 
 import kotlin.test.Test
 
-class OrParserTests {
+class OneOfParserTests {
     @Test fun `it works`() {
-        val abParser = or(str("a"), str("b"))
+        val abParser = oneOf(str("a"), str("b"))
 
         // not enough input
         abParser.parse(Input("")) shouldEqual null

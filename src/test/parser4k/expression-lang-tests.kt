@@ -57,7 +57,7 @@ private object ExpressionLang {
         inOrder(ref { expr }, token(tokenString), ref { expr }).mapAsBinary(f)
             .with(cache)
 
-    private val boolLiteral = or(str("true"), str("false")).map { if (it == "true") True else False }
+    private val boolLiteral = oneOf(str("true"), str("false")).map { if (it == "true") True else False }
     private val integerLiteral = CommonParsers.integer.map { IntLiteral(it.toInt()) }
     private val stringLiteral = CommonParsers.string.map { StringLiteral(it) }
     private val arrayLiteral = inOrder(token("["), joinedWith(token(","), ref { expr }), token("]"))
@@ -75,12 +75,12 @@ private object ExpressionLang {
     private val and = binaryExpr("and", ::And)
     private val or = binaryExpr("or", ::Or)
 
-    private val expr: Parser<Expr> = orWithPrecedence(
+    private val expr: Parser<Expr> = oneOfWithPrecedence(
         or,
         and,
-        or(inArray, notInArray),
-        or(equal, notEqual, less, greater),
-        or(arrayLiteral, stringLiteral, integerLiteral, boolLiteral)
+        oneOf(inArray, notInArray),
+        oneOf(equal, notEqual, less, greater),
+        oneOf(arrayLiteral, stringLiteral, integerLiteral, boolLiteral)
     ).reset(cache)
 }
 

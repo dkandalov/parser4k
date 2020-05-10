@@ -12,10 +12,10 @@ object CommonParsers {
             digits.joinToString("") + (optional?.let { it.value1 + it.value2.joinToString("") } ?: "")
         }
 
-    val identifier: Parser<String> = inOrder(letter, repeat(or(letter, digit)))
+    val identifier: Parser<String> = inOrder(letter, repeat(oneOf(letter, digit)))
         .map { (letter, lettersAndDigits) -> letter + lettersAndDigits.joinToString("") }
 
-    val string: Parser<String> = inOrder(str("\""), repeat(or(str("\\\""), regex("[^\"\n\r]"))), str("\""))
+    val string: Parser<String> = inOrder(str("\""), repeat(oneOf(str("\\\""), regex("[^\"\n\r]"))), str("\""))
         .map { (_, it, _) -> it.joinToString("") }
 
     fun token(s: String): Parser<String> =

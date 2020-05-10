@@ -44,9 +44,9 @@ fun <T> oneOrMore(parser: Parser<T>) = repeat(parser, atLeast = 1)
 fun <T> optional(parser: Parser<T>): Parser<T?> =
     repeat(parser, atLeast = 0, atMost = 1).map { it.firstOrNull() }
 
-fun <T> or(vararg parsers: Parser<T>): Parser<T> = or(parsers.toList())
+fun <T> oneOf(vararg parsers: Parser<T>): Parser<T> = oneOf(parsers.toList())
 
-fun <T> or(parsers: List<Parser<T>>) = object : Parser<T> {
+fun <T> oneOf(parsers: List<Parser<T>>) = object : Parser<T> {
     override fun parse(input: Input): Output<T>? {
         parsers.forEach { parser ->
             val output = parser.parse(input)
@@ -56,9 +56,9 @@ fun <T> or(parsers: List<Parser<T>>) = object : Parser<T> {
     }
 }
 
-fun <T> orWithPrecedence(vararg parsers: Parser<T>): Parser<T> = orWithPrecedence(parsers.toList())
+fun <T> oneOfWithPrecedence(vararg parsers: Parser<T>): Parser<T> = oneOfWithPrecedence(parsers.toList())
 
-fun <T> orWithPrecedence(parsers: List<Parser<T>>) = object : Parser<T> {
+fun <T> oneOfWithPrecedence(parsers: List<Parser<T>>) = object : Parser<T> {
     var index = 0
 
     override fun parse(input: Input): Output<T>? {
