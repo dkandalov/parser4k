@@ -41,7 +41,8 @@ fun <T> zeroOrMore(parser: Parser<T>) = repeat(parser, atLeast = 0)
 
 fun <T> oneOrMore(parser: Parser<T>) = repeat(parser, atLeast = 1)
 
-fun <T> optional(parser: Parser<T>) = repeat(parser, atLeast = 0, atMost = 1)
+fun <T> optional(parser: Parser<T>): Parser<T?> =
+    repeat(parser, atLeast = 0, atMost = 1).map { it.firstOrNull() }
 
 fun <T> or(vararg parsers: Parser<T>): Parser<T> = or(parsers.toList())
 
