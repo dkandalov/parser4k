@@ -109,9 +109,10 @@ class NoMatchingParsers(override val message: String) : ParsingError(message)
 
 class InputIsNotConsumed(override val message: String) : ParsingError(message) {
     constructor(output: Output<*>) : this(
+        "\n" + // start new line after "parser4k.InputIsNotConsumed: "
         "${output.input.value}\n" +
-            " ".repeat(output.input.offset) + "^\n" +
-            "payload = ${output.payload}"
+        " ".repeat(output.input.offset) + "^\n" +
+        "payload = ${output.payload}"
     )
 }
 

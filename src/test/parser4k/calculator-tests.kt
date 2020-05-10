@@ -254,12 +254,16 @@ class CalculatorTests {
     @Test fun `invalid input`() {
         { Calculator.evaluate("+1") } shouldFailWith { it is NoMatchingParsers }
         { Calculator.evaluate("()") } shouldFailWith  { it is NoMatchingParsers }
+
         { Calculator.evaluate("(1))") } shouldFailWithMessage """
+            |
             |(1))
             |   ^
             |payload = Number(value=1)
         """
+
         { Calculator.evaluate("1 + 2 + ") } shouldFailWithMessage """
+            |
             |1 + 2 + 
             |     ^
             |payload = Plus(left=Number(value=1), right=Number(value=2))
