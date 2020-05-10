@@ -1,8 +1,33 @@
 package parser4k
 
 object CommonParsers {
-    val whitespaces: Parser<String> = regex("[ \\t\\r\\n]*")
+    val whitespace: Parser<String> = regex("[ \\t\\r\\n]")
+    val digit: Parser<String> = regex("[0-9]")
+    val letter: Parser<String> = regex("[a-zA-Z\$_]")
+
+    val integer: Parser<String> = oneOrMore(digit).map { it.joinToString("") }
+
+    val number: Parser<String> = inOrder(oneOrMore(digit), optional(inOrder(str("."), oneOrMore(digit))))
+        .map { (digits, optional) ->
+            digits.joinToString("") + (optional?.let { it.value1 + it.value2.joinToString("") } ?: "")
+        }
+
+    val identifier: Parser<String> = inOrder(letter, repeat(or(letter, digit)))
+        .map { (letter, lettersAndDigits) -> letter + lettersAndDigits.joinToString("") }
+
+    val string: Parser<String> = inOrder(str("\""), repeat(or(str("\\\""), regex("[^\"\n\r]"))), str("\""))
+        .map { (_, it, _) -> it.joinToString("") }
 
     fun token(s: String): Parser<String> =
-        inOrder(whitespaces, str(s), whitespaces).map { (_, op, _) -> op }
+        inOrder(zeroOrMore(whitespace), str(s), zeroOrMore(whitespace)).map { (_, op, _) -> op }
+
+    fun <T> joinedWith(separator: Parser<*>, parser: Parser<T>): Parser<List<T>> =
+        optional(inOrder(parser, repeat(inOrder(separator, parser))))
+            .map { optional ->
+                if (optional == null) emptyList()
+                else {
+                    val (head, tail) = optional
+                    listOf(head) + tail.map { it.value2 }
+                }
+            }
 }
