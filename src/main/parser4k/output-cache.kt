@@ -32,10 +32,12 @@ fun <T> Parser<T>.reset(outputCache: OutputCache<T>) = object : Parser<T> {
     private var depth = 0
 
     override fun parse(input: Input): Output<T>? {
-        depth++
-        val output = this@reset.parse(input)
-        depth--
-        if (depth == 0) outputCache.clear()
-        return output
+        return try {
+            depth++
+            this@reset.parse(input)
+        } finally {
+            depth--
+            if (depth == 0) outputCache.clear()
+        }
     }
 }
