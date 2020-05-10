@@ -37,7 +37,9 @@ fun <T> repeat(parser: Parser<T>, atLeast: Int = 0, atMost: Int = Int.MAX_VALUE)
     }
 }
 
-fun <T> onceOrMore(parser: Parser<T>) = repeat(parser, atLeast = 1)
+fun <T> zeroOrMore(parser: Parser<T>) = repeat(parser, atLeast = 0)
+
+fun <T> oneOrMore(parser: Parser<T>) = repeat(parser, atLeast = 1)
 
 fun <T> optional(parser: Parser<T>) = repeat(parser, atLeast = 0, atMost = 1)
 

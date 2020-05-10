@@ -6,7 +6,7 @@ plugins {
     kotlin("jvm") version "1.4-M1"
 }
 group = "parser4k"
-version = "1.0-SNAPSHOT"
+version = "1.0"
 
 repositories {
     mavenCentral()
