@@ -62,10 +62,9 @@ class ParserPrecedenceTests {
     private val paren = inOrder(token("("), ref { expr }, token(")")).map { (_, it, _) -> it }
     private val multiply = inOrder(leftRef { expr }, token("*"), ref { expr }).mapAsBinary(::Multiply)
     private val plus = inOrder(leftRef { expr }, token("+"), ref { expr }).mapAsBinary(::Plus)
-    private val minus = inOrder(leftRef { expr }, token("-"), ref { expr }).mapAsBinary(::Minus)
 
     private val expr: Parser<Expression> = oneOfWithPrecedence(
-        oneOf(plus, minus),
+        plus,
         multiply,
         paren.nestedPrecedence(),
         number
@@ -79,7 +78,6 @@ class ParserPrecedenceTests {
         "1 * 2 * 3" shouldParseTo "[1 * [2 * 3]]"
         "1 * 2 + 3" shouldParseTo "[[1 * 2] + 3]"
         "1 + 2 * 3" shouldParseTo "[1 + [2 * 3]]"
-        "1 + 2 * 3 - 4" shouldParseTo "[1 + [[2 * 3] - 4]]"
 
         "(123)" shouldParseTo "123"
         "((123))" shouldParseTo "123"
@@ -88,6 +86,45 @@ class ParserPrecedenceTests {
         "((1 * 2) + 3)" shouldParseTo "[[1 * 2] + 3]"
 
         "(1 + 2) + (3 + 4)" shouldParseTo "[[1 + 2] + [3 + 4]]"
+    }
+
+    private infix fun String.shouldParseTo(expected: String) = parseWith(expr).toExpressionString() shouldEqual expected
+}
+
+class ParserAssociativityTests {
+    private val plus = inOrder(leftRef { expr }, token("+"), ref { expr })
+        .leftAssoc { (left, _, right) -> Plus(left, right) }
+
+    private val power = inOrder(leftRef { expr }, token("^"), ref { expr })
+        .map { (left, _, right) -> Power(left, right) }
+
+    private val expr: Parser<Expression> = oneOfWithPrecedence(plus, power, number)
+
+    @Test fun `it works`() {
+        "123" shouldParseTo "123"
+
+        "1 + 2" shouldParseTo "[1 + 2]"
+        "1 + 2 + 3" shouldParseTo "[[1 + 2] + 3]"
+        "1 + 2 + 3 + 4" shouldParseTo "[[[1 + 2] + 3] + 4]"
+
+        "1 ^ 2" shouldParseTo "[1 ^ 2]"
+        "1 ^ 2 ^ 3" shouldParseTo "[1 ^ [2 ^ 3]]"
+        "1 ^ 2 ^ 3 ^ 4" shouldParseTo "[1 ^ [2 ^ [3 ^ 4]]]"
+
+        "1^2 + 3" shouldParseTo "[[1 ^ 2] + 3]"
+        "1 + 2^3" shouldParseTo "[1 + [2 ^ 3]]"
+        "1^2 + 3^4" shouldParseTo "[[1 ^ 2] + [3 ^ 4]]"
+
+        "1^2 + 3 + 4" shouldParseTo "[[[1 ^ 2] + 3] + 4]"
+        "1 + 2^3 + 4" shouldParseTo "[[1 + [2 ^ 3]] + 4]"
+        "1 + 2 + 3^4" shouldParseTo "[[1 + 2] + [3 ^ 4]]"
+
+        "1 + 2^3 + 4^5" shouldParseTo "[[1 + [2 ^ 3]] + [4 ^ 5]]"
+        "1^2 + 3 + 4^5" shouldParseTo "[[[1 ^ 2] + 3] + [4 ^ 5]]"
+        "1^2 + 3^4 + 5" shouldParseTo "[[[1 ^ 2] + [3 ^ 4]] + 5]"
+
+        "1 + 2^3^4" shouldParseTo "[1 + [2 ^ [3 ^ 4]]]"
+        "1^2^3 + 4" shouldParseTo "[[1 ^ [2 ^ 3]] + 4]"
     }
 
     private infix fun String.shouldParseTo(expected: String) = parseWith(expr).toExpressionString() shouldEqual expected
