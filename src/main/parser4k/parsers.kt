@@ -1,6 +1,9 @@
 package parser4k
 
 import java.lang.RuntimeException
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.HashSet
 
 fun str(s: String): Parser<String> = object : Parser<String> {
     override fun parse(input: Input): Output<String>? = input.run {
@@ -59,16 +62,18 @@ fun <T> oneOf(parsers: List<Parser<T>>) = object : Parser<T> {
 fun <T> oneOfWithPrecedence(vararg parsers: Parser<T>): Parser<T> = oneOfWithPrecedence(parsers.toList())
 
 fun <T> oneOfWithPrecedence(parsers: List<Parser<T>>) = object : Parser<T> {
-    var index = 0
+    val stack: LinkedList<Parser<T>> = LinkedList()
 
     override fun parse(input: Input): Output<T>? {
-        parsers.subList(index, parsers.size).forEachIndexed { parserIndex, parser ->
-            val lastIndex = index
-            index = if (parser is NestedPrecedence) 0 else parserIndex
+        val head = stack.peek()
+        val filteredParsers =
+            if (head == null || head is NestedPrecedence) parsers
+            else parsers.drop(parsers.indexOf(head))
 
+        filteredParsers.forEach { parser ->
+            stack.push(parser)
             val output = parser.parse(input)
-
-            index = lastIndex
+            stack.pop()
             if (output != null) return output
         }
         return null
