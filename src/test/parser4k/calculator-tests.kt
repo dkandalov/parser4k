@@ -6,6 +6,7 @@ import parser4k.*
 import parser4k.CommonParsers.token
 import parser4k.calculatortests.Expression.*
 import parser4k.calculatortests.Expression.Number
+import kotlin.math.pow
 import kotlin.test.Test
 
 
@@ -15,6 +16,7 @@ sealed class Expression {
     data class Minus(val left: Expression, val right: Expression): Expression()
     data class Multiply(val left: Expression, val right: Expression): Expression()
     data class Divide(val left: Expression, val right: Expression): Expression()
+    data class Power(val left: Expression, val right: Expression): Expression()
 }
 
 private val number = regex("\\d+").map { Number(it.toInt()) }
@@ -32,67 +34,28 @@ class NoneRecursiveParserTests {
         }
 
     @Test fun `valid input`() {
-        "123" shouldParseTo Number(123)
-        "1 + 2" shouldParseTo Plus(Number(1), Number(2))
-        "1 - 2" shouldParseTo Minus(Number(1), Number(2))
-        "1 + 2 + 3" shouldParseTo Plus(
-            Plus(Number(1), Number(2)),
-            Number(3)
-        )
-        "1 + 2 - 3" shouldParseTo Minus(
-            Plus(Number(1), Number(2)),
-            Number(3)
-        )
+        "123" shouldParseTo "123"
+        "1 + 2" shouldParseTo "[1 + 2]"
+        "1 - 2" shouldParseTo "[1 - 2]"
+        "1 + 2 + 3" shouldParseTo "[[1 + 2] + 3]"
+        "1 + 2 - 3" shouldParseTo "[[1 + 2] - 3]"
     }
 
-    @Test fun `invalid input`() {
-        expression.parse(Input("abc")) shouldEqual null
-        expression.parse(Input("+123")) shouldEqual null
-        expression.parse(Input("-123")) shouldEqual null
-    }
-
-    @Test fun `partial input`() {
-        expression.parse(Input("1 + 2 +")) shouldEqual Output(
-            payload = Plus(Number(1), Number(2)),
-            input = Input(value = "1 + 2 +", offset = 5)
-        )
-        expression.parse(Input("1 ++ 2")) shouldEqual Output(
-            payload = Number(1),
-            input = Input(value = "1 ++ 2", offset = 1)
-        )
-    }
-
-    private infix fun String.shouldParseTo(expected: Expression) = parseWith(expression) shouldEqual expected
+    private infix fun String.shouldParseTo(expected: String) = parseWith(expression).toExpressionString() shouldEqual expected
 }
 
 class RecursiveParserTests {
-    private val plus = inOrder(leftRef { expr }, token("+"), ref { expr }).mapAsBinary(::Plus)
-    private val minus = inOrder(leftRef { expr }, token("-"), ref { expr }).mapAsBinary(::Minus)
-    private val expr: Parser<Expression> = oneOf(minus, plus, number)
+    private val power = inOrder(leftRef { expr }, token("^"), ref { expr }).mapAsBinary(::Power)
+    private val expr: Parser<Expression> = oneOf(power, number)
 
     @Test fun `valid input`() {
-        "123" shouldParseTo Number(123)
-        "1 + 2" shouldParseTo Plus(Number(1), Number(2))
-        "1 - 2" shouldParseTo Minus(Number(1), Number(2))
-        "1 + 2 + 3" shouldParseTo Plus(
-            Number(1),
-            Plus(Number(2), Number(3))
-        )
-        "1 - 2 - 3" shouldParseTo Minus(
-            Number(1),
-            Minus(Number(2), Number(3))
-        )
-        "1 + 2 - 3" shouldParseTo Plus(
-            Number(1),
-            Minus(Number(2), Number(3))
-        )
-        "1 - 2 + 3" shouldParseTo Minus(
-            Number(1),
-            Plus(Number(2), Number(3))
-        )
+        "123" shouldParseTo "123"
+        "1 ^ 2" shouldParseTo "[1 ^ 2]"
+        "1 ^ 2 ^ 3" shouldParseTo "[1 ^ [2 ^ 3]]"
+        "1 ^ 2 ^ 3 ^ 4" shouldParseTo "[1 ^ [2 ^ [3 ^ 4]]]"
     }
 
-    private infix fun String.shouldParseTo(expected: Expression) = parseWith(expr) shouldEqual expected
+    private infix fun String.shouldParseTo(expected: String) = parseWith(expr).toExpressionString() shouldEqual expected
 }
 
 class ParserPrecedenceTests {
@@ -109,57 +72,36 @@ class ParserPrecedenceTests {
     )
 
     @Test fun `valid input`() {
-        "123" shouldParseTo Number(123)
-        "1 + 2" shouldParseTo Plus(Number(1), Number(2))
-        "1 * 2" shouldParseTo Multiply(Number(1), Number(2))
-        "1 + 2 + 3" shouldParseTo Plus(
-            Number(1),
-            Plus(Number(2), Number(3))
-        )
-        "1 * 2 * 3" shouldParseTo Multiply(
-            Number(1),
-            Multiply(Number(2), Number(3))
-        )
-        "1 * 2 + 3" shouldParseTo Plus(
-            Multiply(Number(1), Number(2)),
-            Number(3)
-        )
-        "1 + 2 * 3" shouldParseTo Plus(
-            Number(1),
-            Multiply(Number(2), Number(3))
-        )
-        "1 + 2 * 3 - 4" shouldParseTo Plus(
-            Number(1),
-            Minus(
-                Multiply(Number(2), Number(3)),
-                Number(4)
-            )
-        )
+        "123" shouldParseTo "123"
+        "1 + 2" shouldParseTo "[1 + 2]"
+        "1 * 2" shouldParseTo "[1 * 2]"
+        "1 + 2 + 3" shouldParseTo "[1 + [2 + 3]]"
+        "1 * 2 * 3" shouldParseTo "[1 * [2 * 3]]"
+        "1 * 2 + 3" shouldParseTo "[[1 * 2] + 3]"
+        "1 + 2 * 3" shouldParseTo "[1 + [2 * 3]]"
+        "1 + 2 * 3 - 4" shouldParseTo "[1 + [[2 * 3] - 4]]"
 
-        "(123)" shouldParseTo Number(123)
-        "((123))" shouldParseTo Number(123)
+        "(123)" shouldParseTo "123"
+        "((123))" shouldParseTo "123"
+        "(1 * 2) + 3" shouldParseTo "[[1 * 2] + 3]"
+        "1 * (2 + 3)" shouldParseTo "[1 * [2 + 3]]"
+        "((1 * 2) + 3)" shouldParseTo "[[1 * 2] + 3]"
 
-        "(1 * 2) + 3" shouldParseTo Plus(
-            Multiply(Number(1), Number(2)),
-            Number(3)
-        )
-        "1 * (2 + 3)" shouldParseTo Multiply(
-            Number(1),
-            Plus(Number(2), Number(3))
-        )
-        "((1 * 2) + 3)" shouldParseTo Plus(
-            Multiply(Number(1), Number(2)),
-            Number(3)
-        )
-
-        "(1 + 2) + (3 + 4)" shouldParseTo Plus(
-            Plus(Number(1), Number(2)),
-            Plus(Number(3), Number(4))
-        )
+        "(1 + 2) + (3 + 4)" shouldParseTo "[[1 + 2] + [3 + 4]]"
     }
 
-    private infix fun String.shouldParseTo(expected: Expression) = parseWith(expr) shouldEqual expected
+    private infix fun String.shouldParseTo(expected: String) = parseWith(expr).toExpressionString() shouldEqual expected
 }
+
+private fun Expression.toExpressionString(): String =
+    when (this) {
+        is Number   -> value.toString()
+        is Plus     -> "[${left.toExpressionString()} + ${right.toExpressionString()}]"
+        is Minus    -> "[${left.toExpressionString()} - ${right.toExpressionString()}]"
+        is Multiply -> "[${left.toExpressionString()} * ${right.toExpressionString()}]"
+        is Divide   -> "[${left.toExpressionString()} / ${right.toExpressionString()}]"
+        is Power    -> "[${left.toExpressionString()} ^ ${right.toExpressionString()}]"
+    }
 
 class ParserPerformanceTests {
     private val log = ArrayList<String>()
@@ -222,15 +164,15 @@ private object Calculator {
 
     fun evaluate(s: String) = s.parseWith(expr).evaluate()
 
-    private fun Expression.evaluate(): Int {
-        return when (this) {
+    private fun Expression.evaluate(): Int =
+        when (this) {
             is Number   -> value
             is Plus     -> left.evaluate() + right.evaluate()
             is Minus    -> left.evaluate() - right.evaluate()
             is Multiply -> left.evaluate() * right.evaluate()
             is Divide   -> left.evaluate() / right.evaluate()
+            is Power    -> left.evaluate().toDouble().pow(right.evaluate()).toInt()
         }
-    }
 }
 
 
