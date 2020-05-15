@@ -2,11 +2,11 @@
 
 package parser4k
 
-fun <A, B, R> Parser<List3<A, *, B>>.mapAsBinary(f: (A, B) -> R) = object : Parser<R> {
+fun <A, B, R> Parser<List3<A, *, B>>.mapAsBinary(transform: (A, B) -> R) = object : Parser<R> {
     override fun parse(input: Input): Output<R>? {
         val (payload, nextInput) = this@mapAsBinary.parse(input) ?: return null
         val (left, _, right) = payload
-        return Output(f(left, right), nextInput)
+        return Output(transform(left, right), nextInput)
     }
 }
 

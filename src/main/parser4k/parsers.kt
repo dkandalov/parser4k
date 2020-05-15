@@ -101,10 +101,10 @@ fun <T> leftRef(f: () -> Parser<T>) = object : Parser<T> {
     }
 }
 
-fun <T, R> Parser<T>.map(f: (T) -> R) = object : Parser<R> {
+fun <T, R> Parser<T>.map(transform: (T) -> R) = object : Parser<R> {
     override fun parse(input: Input): Output<R>? {
         val (payload, nextInput) = this@map.parse(input) ?: return null
-        return Output(f(payload), nextInput)
+        return Output(transform(payload), nextInput)
     }
 }
 
