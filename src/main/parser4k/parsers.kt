@@ -94,7 +94,7 @@ fun <T> ref(f: () -> Parser<T>) = object : Parser<T> {
     override fun parse(input: Input) = f().parse(input)
 }
 
-fun <T> leftRef(f: () -> Parser<T>) = object : Parser<T> {
+fun <T> nonRecRef(f: () -> Parser<T>) = object : Parser<T> {
     val offsets: HashSet<Int> = HashSet()
 
     override fun parse(input: Input): Output<T>? {

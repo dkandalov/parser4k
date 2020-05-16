@@ -45,7 +45,7 @@ class NoneRecursiveParserTests {
 }
 
 class RecursiveParserTests {
-    private val power = inOrder(leftRef { expr }, token("^"), ref { expr }).mapAsBinary(::Power)
+    private val power = inOrder(nonRecRef { expr }, token("^"), ref { expr }).mapAsBinary(::Power)
     private val expr: Parser<Expression> = oneOf(power, number)
 
     @Test fun `valid input`() {
@@ -60,8 +60,8 @@ class RecursiveParserTests {
 
 class ParserPrecedenceTests {
     private val paren = inOrder(token("("), ref { expr }, token(")")).map { (_, it, _) -> it }
-    private val multiply = inOrder(leftRef { expr }, token("*"), ref { expr }).mapAsBinary(::Multiply)
-    private val plus = inOrder(leftRef { expr }, token("+"), ref { expr }).mapAsBinary(::Plus)
+    private val multiply = inOrder(nonRecRef { expr }, token("*"), ref { expr }).mapAsBinary(::Multiply)
+    private val plus = inOrder(nonRecRef { expr }, token("+"), ref { expr }).mapAsBinary(::Plus)
 
     private val expr: Parser<Expression> = oneOfWithPrecedence(
         plus,
@@ -81,9 +81,9 @@ class ParserPrecedenceTests {
 
         "(123)" shouldParseTo "123"
         "((123))" shouldParseTo "123"
-        "(1 * 2) + 3" shouldParseTo "[[1 * 2] + 3]"
-        "1 * (2 + 3)" shouldParseTo "[1 * [2 + 3]]"
-        "((1 * 2) + 3)" shouldParseTo "[[1 * 2] + 3]"
+        "(1 + 2) * 3" shouldParseTo "[[1 + 2] * 3]"
+        "1 + (2 * 3)" shouldParseTo "[1 + [2 * 3]]"
+        "((1 + 2) * 3)" shouldParseTo "[[1 + 2] * 3]"
 
         "(1 + 2) + (3 + 4)" shouldParseTo "[[1 + 2] + [3 + 4]]"
     }
@@ -92,10 +92,10 @@ class ParserPrecedenceTests {
 }
 
 class ParserAssociativityTests {
-    private val plus = inOrder(leftRef { expr }, token("+"), ref { expr })
+    private val plus = inOrder(nonRecRef { expr }, token("+"), ref { expr })
         .leftAssoc { (left, _, right) -> Plus(left, right) }
 
-    private val power = inOrder(leftRef { expr }, token("^"), ref { expr })
+    private val power = inOrder(nonRecRef { expr }, token("^"), ref { expr })
         .map { (left, _, right) -> Power(left, right) }
 
     private val expr: Parser<Expression> = oneOfWithPrecedence(plus, power, number)
