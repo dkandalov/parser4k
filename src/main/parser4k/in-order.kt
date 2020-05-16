@@ -18,7 +18,7 @@ fun <T1, T2, T3> InOrder3<T1, T2, T3>.leftAssoc(transform: (List3<T1, T2, T3>) -
         override fun parse(input: Input): Output<T3>? {
             val (payload1, input1) = parser1.parseWithInject(input) ?: return null
             val (payload2, input2) = parser2.parse(input1) ?: return null
-            val (payload3, input3) = parser3.parseWithInject(input2) {transform(List3(payload1, payload2, it as T3))} ?: return null
+            val (payload3, input3) = parser3.parseWithInject(input2) { transform(List3(payload1, payload2, it as T3)) } ?: return null
             return Output(payload3, input3)
         }
     }
