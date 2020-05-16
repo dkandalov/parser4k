@@ -23,10 +23,16 @@ fun <T1, T2, T3> InOrder3<T1, T2, T3>.leftAssoc(transform: (List3<T1, T2, T3>) -
         }
     }
 
-class InOrder1<T1>(val parser1: Parser<T1>) : Parser<List1<T1>> {
-    override fun parse(input: Input): Output<List1<T1>>? {
-        val (payload1, input1) = parser1.parse(input) ?: return null
-        return Output(List1(payload1), input1)
+class InOrder<T>(val parsers: List<Parser<T>>) : Parser<List<T>> {
+    override fun parse(input: Input): Output<List<T>>? {
+        val payload = ArrayList<T>(parsers.size)
+        var nextInput = input
+        parsers.forEach { parser ->
+            val output = parser.parse(nextInput) ?: return null
+            nextInput = output.input
+            payload.add(output.payload)
+        }
+        return Output(payload, nextInput)
     }
 }
 
@@ -107,9 +113,9 @@ class InOrder8<T1, T2, T3, T4, T5, T6, T7, T8>(val parser1: Parser<T1>, val pars
     }
 }
 
+fun <T> inOrder(parsers: List<Parser<T>>) = InOrder(parsers)
 
-fun <T1> inOrder(parser1: Parser<T1>) =
-    InOrder1(parser1)
+fun <T> inOrder(vararg parsers: Parser<T>) = inOrder(parsers.toList())
 
 fun <T1, T2> inOrder(parser1: Parser<T1>, parser2: Parser<T2>) =
     InOrder2(parser1, parser2)
