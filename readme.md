@@ -2,9 +2,12 @@
 
 [![Build Status](https://travis-ci.org/dkandalov/parser4k.svg?branch=master)](https://travis-ci.org/dkandalov/parser4k)
 
+THIS IS CURRENTLY WORK-IN-PROGRESS 🍼👶
+
 Parser4k is a recursive descent parser combinator library for Kotlin.
+
 It aims to be:
- - **simple** - very few core concepts, no magic workflow or DSL
+ - **simple** - very few core concepts, no magic execution workflow or DSL
  - **easy to use** - you can quickly figure out how to write a parser for a small language
  - **production-ready** - not a toy project, good-enough performance to be embedded into real applications
  

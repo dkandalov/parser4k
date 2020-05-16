@@ -13,3 +13,10 @@ data class Output<out T>(val payload: T, val input: Input)
 interface Parser<out T> {
     fun parse(input: Input): Output<T>?
 }
+
+fun <T, R> Parser<T>.map(transform: (T) -> R) = object : Parser<R> {
+    override fun parse(input: Input): Output<R>? {
+        val (payload, nextInput) = this@map.parse(input) ?: return null
+        return Output(transform(payload), nextInput)
+    }
+}
