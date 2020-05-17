@@ -32,6 +32,7 @@ private object ExpressionLang {
         data class And(val left: Expr, val right: Expr) : Expr()
         data class Or(val left: Expr, val right: Expr) : Expr()
         data class Not(val value: Expr) : Expr()
+        data class IfThenElse(val cond: Expr, val ifTrue: Expr, val ifFalse: Expr) : Expr()
 
         data class InArray(val left: Expr, val right: Expr) : Expr()
         data class NotInArray(val left: Expr, val right: Expr) : Expr()
@@ -69,10 +70,14 @@ private object ExpressionLang {
     private val and = binaryExpr("and", ::And)
     private val or = binaryExpr("or", ::Or)
     private val not = unaryExpr("not", ::Not)
+    private val ifThenElse = inOrder(token("if"), ref { expr }, token("then"), ref { expr }, token("else"), ref { expr })
+        .map { (_, cond, _, ifTrue, _, ifFalse) -> IfThenElse(cond, ifTrue, ifFalse) }
+        .with(cache)
 
     private val paren = inOrder(token("("), ref { expr }, token(")")).map { (_, it, _) -> it }.with(cache)
 
     private val expr: Parser<Expr> = oneOfWithPrecedence(
+        ifThenElse,
         or,
         and,
         oneOf(inArray, notInArray),
@@ -113,6 +118,7 @@ private object ExpressionLang {
             is And           -> (left.eval() as Boolean) && (right.eval() as Boolean)
             is Or            -> (left.eval() as Boolean) || (right.eval() as Boolean)
             is Not           -> !(value.eval() as Boolean)
+            is IfThenElse    -> if (cond.eval() as Boolean) ifTrue.eval() else ifFalse.eval()
         }
 }
 
@@ -189,5 +195,14 @@ class ExpressionLangTests {
         evaluate("((1 + 2) * 3 + 4)") shouldEqual 13
 
         parse("not (1 or 2)") shouldEqual Not(Or(IntLiteral(1), IntLiteral(2)))
+    }
+
+    @Test fun `if-then-else expressions`() {
+        evaluate("if true then 1 else 2") shouldEqual 1
+        evaluate("if false then 1 else 2") shouldEqual 2
+        evaluate("if false then 1 else if false then 2 else 3") shouldEqual 3
+
+        parse("if false then 1 else if false then 2 else 3") shouldEqual
+            IfThenElse(False, IntLiteral(1), IfThenElse(False, IntLiteral(2), IntLiteral(3)))
     }
 }
