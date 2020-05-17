@@ -23,6 +23,11 @@ private object ExpressionLang {
         data class Less(val left: Expr, val right: Expr) : Expr()
         data class Greater(val left: Expr, val right: Expr) : Expr()
 
+        data class Plus(val left: Expr, val right: Expr) : Expr()
+        data class Minus(val left: Expr, val right: Expr) : Expr()
+        data class Multiply(val left: Expr, val right: Expr) : Expr()
+        data class Divide(val left: Expr, val right: Expr) : Expr()
+
         data class And(val left: Expr, val right: Expr) : Expr()
         data class Or(val left: Expr, val right: Expr) : Expr()
 
@@ -30,37 +35,15 @@ private object ExpressionLang {
         data class NotInArray(val left: Expr, val right: Expr) : Expr()
     }
 
-    private fun Expr.eval(): Any =
-        when (this) {
-            True             -> true
-            False            -> false
-            is IntLiteral    -> value
-            is StringLiteral -> value
-            is ArrayLiteral  -> value.map { it.eval() }
-            is Equal         -> left.eval() == right.eval()
-            is NotEqual      -> left.eval() != right.eval()
-            is Less          -> (left.eval() as Int) < (right.eval() as Int)
-            is Greater       -> (left.eval() as Int) > (right.eval() as Int)
-            is And           -> (left.eval() as Boolean) && (right.eval() as Boolean)
-            is Or            -> (left.eval() as Boolean) || (right.eval() as Boolean)
-            is InArray       -> left.eval() in (right.eval() as List<*>)
-            is NotInArray    -> left.eval() !in (right.eval() as List<*>)
-        }
-
-    fun parse(s: String) = s.parseWith(expr)
-
-    fun evaluate(s: String) = s.parseWith(expr).eval()
-
     private val cache = OutputCache<Expr>()
 
     private fun binaryExpr(tokenString: String, f: (Expr, Expr) -> Expr) =
-        inOrder(ref { expr }, token(tokenString), ref { expr }).mapAsBinary(f)
-            .with(cache)
+        inOrder(ref { expr }, token(tokenString), ref { expr }).leftAssocAsBinary(f).with(cache)
 
     private val boolLiteral = oneOf(str("true"), str("false")).map { if (it == "true") True else False }
-    private val integerLiteral = CommonParsers.integer.map { IntLiteral(it.toInt()) }
+    private val intLiteral = CommonParsers.integer.map { IntLiteral(it.toInt()) }
     private val stringLiteral = CommonParsers.string.map { StringLiteral(it) }
-    private val arrayLiteral = inOrder(token("["), joinedWith(token(","), ref { expr }), token("]"))
+    private val arrayLiteral = inOrder(token("["), ref { expr }.joinedWith(token(",")), token("]"))
         .map { (_, list, _) -> ArrayLiteral(list) }
         .with(cache)
 
@@ -68,6 +51,11 @@ private object ExpressionLang {
     private val notEqual = binaryExpr("!=", ::NotEqual)
     private val less = binaryExpr("<", ::Less)
     private val greater = binaryExpr(">", ::Greater)
+
+    private val divide = binaryExpr("/", ::Divide)
+    private val multiply = binaryExpr("*", ::Multiply)
+    private val minus = binaryExpr("-", ::Minus)
+    private val plus = binaryExpr("+", ::Plus)
 
     private val inArray = binaryExpr("in", ::InArray)
     private val notInArray = binaryExpr("not in", ::NotInArray)
@@ -80,8 +68,40 @@ private object ExpressionLang {
         and,
         oneOf(inArray, notInArray),
         oneOf(equal, notEqual, less, greater),
-        oneOf(arrayLiteral, stringLiteral, integerLiteral, boolLiteral)
+        oneOf(plus, minus),
+        oneOf(multiply, divide),
+        oneOf(arrayLiteral, stringLiteral, intLiteral, boolLiteral)
     ).reset(cache)
+
+    fun parse(s: String) = s.parseWith(expr)
+
+    fun evaluate(s: String) = s.parseWith(expr).eval()
+
+    private fun Expr.eval(): Any =
+        when (this) {
+            True             -> true
+            False            -> false
+            is IntLiteral    -> value
+            is StringLiteral -> value
+            is ArrayLiteral  -> value.map { it.eval() }
+
+            is Equal         -> left.eval() == right.eval()
+            is NotEqual      -> left.eval() != right.eval()
+            is Less          -> (left.eval() as Int) < (right.eval() as Int)
+            is Greater       -> (left.eval() as Int) > (right.eval() as Int)
+
+            is Plus          -> (left.eval() as Int) + (right.eval() as Int)
+            is Minus         -> (left.eval() as Int) - (right.eval() as Int)
+            is Multiply      -> (left.eval() as Int) * (right.eval() as Int)
+            is Divide        -> (left.eval() as Int) / (right.eval() as Int)
+
+            is InArray       -> left.eval() in (right.eval() as List<*>)
+            is NotInArray    -> left.eval() !in (right.eval() as List<*>)
+
+            is And           -> (left.eval() as Boolean) && (right.eval() as Boolean)
+            is Or            -> (left.eval() as Boolean) || (right.eval() as Boolean)
+        }
+
 }
 
 class ExpressionLangTests {
@@ -105,6 +125,8 @@ class ExpressionLangTests {
     @Test fun comparison() {
         evaluate("true == true") shouldEqual true
         evaluate("true == false") shouldEqual false
+        evaluate("\"foo\" == \"bar\"") shouldEqual false
+        evaluate("[1, 2] == [1, 2]") shouldEqual true
 
         evaluate("1 != 2") shouldEqual true
         evaluate("123 != 123") shouldEqual false
@@ -134,5 +156,13 @@ class ExpressionLangTests {
 
         parse("1 and 2 or 3") shouldEqual Or(And(IntLiteral(1), IntLiteral(2)), IntLiteral(3))
         parse("1 or 2 and 3") shouldEqual Or(IntLiteral(1), And(IntLiteral(2), IntLiteral(3)))
+        parse("1 or 2 or 3") shouldEqual Or(Or(IntLiteral(1), IntLiteral(2)), IntLiteral(3))
+    }
+
+    @Test fun `arithmetic expressions`() {
+        evaluate("1 + 2") shouldEqual 3
+        evaluate("1 - 2 + 3") shouldEqual 2
+        evaluate("1 + 2 * 3") shouldEqual 7
+        evaluate("1 + 2 * 3 / 4") shouldEqual 2
     }
 }

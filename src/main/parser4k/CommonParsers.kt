@@ -21,8 +21,8 @@ object CommonParsers {
     fun token(s: String): Parser<String> =
         inOrder(zeroOrMore(whitespace), str(s), zeroOrMore(whitespace)).map { (_, op, _) -> op }
 
-    fun <T> joinedWith(separator: Parser<*>, parser: Parser<T>): Parser<List<T>> =
-        optional(inOrder(parser, repeat(inOrder(separator, parser))))
+    fun <T> Parser<T>.joinedWith(separator: Parser<*>): Parser<List<T>> =
+        optional(inOrder(this, repeat(inOrder(separator, this))))
             .map { optional ->
                 if (optional == null) emptyList()
                 else {
