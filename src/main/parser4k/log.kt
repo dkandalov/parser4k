@@ -19,6 +19,8 @@ class ParsingLog {
 
     fun events(): List<ParsingEvent> = events
 
+    fun clear() = events.clear()
+
     internal fun before(parserId: String, input: Input) {
         idStack.push(parserId)
         inputStack.push(input)
@@ -33,14 +35,19 @@ class ParsingLog {
         }
     }
 
-    private fun stackTrace(): List<Pair<String, Int>> = idStack.zip(inputStack.map { it.offset }).asReversed()
+    private fun stackTrace(): List<StackFrame> =
+        idStack.zip(inputStack)
+            .map { (id, input) -> StackFrame(id, input.offset) }
+            .asReversed()
 }
 
 fun List<ParsingEvent>.print() = forEach { println(it.toDebugString()) }
 
 sealed class ParsingEvent
-data class BeforeParsing(val input: Input, val stackTrace: List<Pair<String, Int>>) : ParsingEvent()
-data class AfterParsing<T>(val input: Input, val output: Output<T>?, val stackTrace: List<Pair<String, Int>>) : ParsingEvent()
+data class BeforeParsing(val input: Input, val stackTrace: List<StackFrame>) : ParsingEvent()
+data class AfterParsing<T>(val input: Input, val output: Output<T>?, val stackTrace: List<StackFrame>) : ParsingEvent()
+
+data class StackFrame(val parserId: String, val offset: Int)
 
 fun ParsingEvent.toDebugString() =
     when (this) {
@@ -50,6 +57,6 @@ fun ParsingEvent.toDebugString() =
 
 private fun Input.diff(that: Input) = value.substring(this.offset, that.offset)
 
-private fun List<Pair<String, Int>>.string() = joinToString(" ") { it.first + ":" + it.second }
+private fun List<StackFrame>.string() = joinToString(" ") { it.parserId + ":" + it.offset }
 
 private fun Input.string() = "\"$value\""

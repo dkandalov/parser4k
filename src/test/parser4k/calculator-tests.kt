@@ -4,20 +4,11 @@ package parser4k.calculatortests
 
 import parser4k.*
 import parser4k.CommonParsers.token
-import parser4k.calculatortests.Expression.*
-import parser4k.calculatortests.Expression.Number
+import parser4k.Expression.*
+import parser4k.Expression.Number
 import java.math.BigDecimal
 import kotlin.test.Test
 
-
-sealed class Expression {
-    data class Number(val value: BigDecimal): Expression()
-    data class Plus(val left: Expression, val right: Expression): Expression()
-    data class Minus(val left: Expression, val right: Expression): Expression()
-    data class Multiply(val left: Expression, val right: Expression): Expression()
-    data class Divide(val left: Expression, val right: Expression): Expression()
-    data class Power(val left: Expression, val right: Expression): Expression()
-}
 
 private val number = regex("\\d+").map { Number(it.toBigDecimal()) }
 
@@ -125,58 +116,6 @@ class ParserAssociativityTests {
 
         "1 + 2^3^4" shouldParseTo "[1 + [2 ^ [3 ^ 4]]]"
         "1^2^3 + 4" shouldParseTo "[[1 ^ [2 ^ 3]] + 4]"
-    }
-
-    private infix fun String.shouldParseTo(expected: String) = parseWith(expr).toExpressionString() shouldEqual expected
-}
-
-private fun Expression.toExpressionString(): String =
-    when (this) {
-        is Number   -> value.toString()
-        is Plus     -> "[${left.toExpressionString()} + ${right.toExpressionString()}]"
-        is Minus    -> "[${left.toExpressionString()} - ${right.toExpressionString()}]"
-        is Multiply -> "[${left.toExpressionString()} * ${right.toExpressionString()}]"
-        is Divide   -> "[${left.toExpressionString()} / ${right.toExpressionString()}]"
-        is Power    -> "[${left.toExpressionString()} ^ ${right.toExpressionString()}]"
-    }
-
-class ParserPerformanceTests {
-    private val log = ArrayList<String>()
-    private val cache = OutputCache<Expression>()
-
-    private val divide = inOrder(ref { expr }, token("/"), ref { expr }).leftAssocAsBinary(::Divide).logNoOutput("divide").with(cache)
-    private val multiply = inOrder(ref { expr }, token("*"), ref { expr }).leftAssocAsBinary(::Multiply).logNoOutput("multiply").with(cache)
-    private val minus = inOrder(ref { expr }, token("-"), ref { expr }).leftAssocAsBinary(::Minus).logNoOutput("minus").with(cache)
-    private val plus = inOrder(ref { expr }, token("+"), ref { expr }).leftAssocAsBinary(::Plus).logNoOutput("plus").with(cache)
-
-    private val expr: Parser<Expression> = oneOf(plus, minus, multiply, divide, number).reset(cache)
-
-    @Test fun `use each parser once at each input offset`() {
-        expectMinimalLog { "1" shouldParseTo "1" }
-        expectMinimalLog { "1 + 2" shouldParseTo "[1 + 2]" }
-        expectMinimalLog { "1 - 2" shouldParseTo "[1 - 2]" }
-        expectMinimalLog { "1 * 2" shouldParseTo "[1 * 2]" }
-        expectMinimalLog { "1 / 2" shouldParseTo "[1 / 2]" }
-    }
-
-    private fun expectMinimalLog(f: () -> Unit) {
-        log.clear()
-        f()
-        log.size shouldEqual log.distinct().size
-    }
-
-    private fun <T> Parser<T>.logNoOutput(parserId: String): Parser<T> {
-        return onNoOutput {
-            log.add("offset ${it.offset}: $parserId")
-        }
-    }
-
-    private fun <T> Parser<T>.onNoOutput(f: (Input) -> Unit) = object: Parser<T> {
-        override fun parse(input: Input): Output<T>? {
-            val output = this@onNoOutput.parse(input)
-            if (output == null) f(input)
-            return output
-        }
     }
 
     private infix fun String.shouldParseTo(expected: String) = parseWith(expr).toExpressionString() shouldEqual expected
