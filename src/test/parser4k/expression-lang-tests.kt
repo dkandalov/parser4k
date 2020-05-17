@@ -36,6 +36,7 @@ private object ExpressionLang {
 
         data class InArray(val left: Expr, val right: Expr) : Expr()
         data class NotInArray(val left: Expr, val right: Expr) : Expr()
+        data class ArrayAccess(val left: Expr, val right: Expr) : Expr()
     }
 
     private val cache = OutputCache<Expr>()
@@ -66,6 +67,9 @@ private object ExpressionLang {
 
     private val inArray = binaryExpr("in", ::InArray)
     private val notInArray = binaryExpr("not in", ::NotInArray)
+    private val arrayAccess = inOrder(ref { expr }, token("["), ref { expr }, token("]"))
+        .map { (left, _, right, _) -> ArrayAccess(left, right) }
+        .with(cache)
 
     private val and = binaryExpr("and", ::And)
     private val or = binaryExpr("or", ::Or)
@@ -85,6 +89,7 @@ private object ExpressionLang {
         oneOf(plus, minus),
         oneOf(multiply, divide),
         oneOf(unaryMinus, not),
+        arrayAccess.nestedPrecedence(),
         paren.nestedPrecedence(),
         oneOf(arrayLiteral, stringLiteral, intLiteral, boolLiteral)
     ).reset(cache)
@@ -114,6 +119,7 @@ private object ExpressionLang {
 
             is InArray       -> left.eval() in (right.eval() as List<*>)
             is NotInArray    -> left.eval() !in (right.eval() as List<*>)
+            is ArrayAccess   -> (left.eval() as List<*>)[right.eval() as Int]!!
 
             is And           -> (left.eval() as Boolean) && (right.eval() as Boolean)
             is Or            -> (left.eval() as Boolean) || (right.eval() as Boolean)
@@ -164,6 +170,11 @@ class ExpressionLangTests {
         evaluate("1 not in []") shouldEqual true
         evaluate("1 not in [\"\"]") shouldEqual true
         evaluate("1 not in [1, 2, 3]") shouldEqual false
+
+        evaluate("[1, 2, 3][0]") shouldEqual 1
+        evaluate("[1, 2, 3][1]") shouldEqual 2
+        evaluate("[1, 2, 3][2]") shouldEqual 3
+        evaluate("[1, 2, 3][3 - 1]") shouldEqual 3
     }
 
     @Test fun `and, or, not expressions`() {
