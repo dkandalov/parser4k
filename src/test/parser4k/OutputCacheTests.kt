@@ -1,5 +1,7 @@
 package parser4k
 
+import parser4k.CommonParsers.token
+import parser4k.Expression.*
 import kotlin.test.Test
 
 class OutputCacheTests {
@@ -7,9 +9,9 @@ class OutputCacheTests {
     private val log = ParsingLog { logEvents.add(it) }
     private val cache = OutputCache<Expression>()
 
-    private val number = CommonParsers.number.map { Expression.Number(it.toBigDecimal()) }.with("num", log).with(cache)
-    private val minus = inOrder(ref { expr }, CommonParsers.token("-"), ref { expr }).leftAssocAsBinary(Expression::Minus).with("minus", log).with(cache)
-    private val plus = inOrder(ref { expr }, CommonParsers.token("+"), ref { expr }).leftAssocAsBinary(Expression::Plus).with("plus", log).with(cache)
+    private val number = regex("\\d+").map { Number(it.toBigDecimal()) }.with("num", log).with(cache)
+    private val minus = inOrder(ref { expr }, token("-"), ref { expr }).leftAssocAsBinary(::Minus).with("minus", log).with(cache)
+    private val plus = inOrder(ref { expr }, token("+"), ref { expr }).leftAssocAsBinary(::Plus).with("plus", log).with(cache)
 
     private val expr: Parser<Expression> = oneOf(plus, minus, number).reset(cache)
 

@@ -14,17 +14,17 @@ It aims to be:
 ### Example
 ```kotlin
 object MinimalCalculator {
-    private val cache = OutputCache<BigDecimal>()
+    val cache = OutputCache<BigDecimal>()
 
-    private val number = regex("\\d+").map { it.toBigDecimal() }
-    private val paren = inOrder(token("("), ref { expr }, token(")")).map { (_, it, _) -> it }
-    private val power = inOrder(ref { expr }, token("^"), ref { expr }).map { (l, _, r) -> l.pow(r.toInt()) }.with(cache)
-    private val divide = inOrder(ref { expr }, token("/"), ref { expr }).leftAssoc { (l, _, r) -> l.divide(r) }.with(cache)
-    private val multiply = inOrder(ref { expr }, token("*"), ref { expr }).leftAssoc { (l, _, r) -> l * r }.with(cache)
-    private val minus = inOrder(ref { expr }, token("-"), ref { expr }).leftAssoc { (l, _, r) -> l - r }.with(cache)
-    private val plus = inOrder(ref { expr }, token("+"), ref { expr }).leftAssoc { (l, _, r) -> l + r }.with(cache)
+    val number = regex("\\d+").map { it.toBigDecimal() }
+    val paren = inOrder(token("("), ref { expr }, token(")")).map { (_, it, _) -> it }
+    val power = inOrder(ref { expr }, token("^"), ref { expr }).map { (l, _, r) -> l.pow(r.toInt()) }.with(cache)
+    val divide = inOrder(ref { expr }, token("/"), ref { expr }).leftAssoc { (l, _, r) -> l.divide(r) }.with(cache)
+    val multiply = inOrder(ref { expr }, token("*"), ref { expr }).leftAssoc { (l, _, r) -> l * r }.with(cache)
+    val minus = inOrder(ref { expr }, token("-"), ref { expr }).leftAssoc { (l, _, r) -> l - r }.with(cache)
+    val plus = inOrder(ref { expr }, token("+"), ref { expr }).leftAssoc { (l, _, r) -> l + r }.with(cache)
 
-    private val expr: Parser<BigDecimal> = oneOfWithPrecedence(
+    val expr: Parser<BigDecimal> = oneOfWithPrecedence(
         oneOf(plus, minus),
         oneOf(multiply, divide),
         power,

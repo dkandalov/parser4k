@@ -60,12 +60,4 @@ class InOrderParserTests {
             Input("abcdefgh", offset = 8)
         )
     }
-
-    private fun <T> List<T>.toMultiTypedList(): Any =
-        when (size) {
-            1    -> List1(this[0])
-            2    -> List2(this[0], this[1])
-            3    -> List3(this[0], this[1], this[2])
-            else -> error("")
-        }
 }
