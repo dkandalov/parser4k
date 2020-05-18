@@ -3,7 +3,8 @@ package parser4k
 import org.junit.Test
 
 class LogTests {
-    private val log = ParsingLog()
+    private val logEvents = ArrayList<ParsingEvent>()
+    private val log = ParsingLog { logEvents.add(it) }
 
     private val boolean = oneOf(str("true"), str("false")).with("boolean", log)
 
@@ -23,7 +24,7 @@ class LogTests {
 
     @Test fun `boolean literal`() {
         "true || false".parseWith(expr) shouldEqual List3("true", " || ", "false")
-        log.events().joinToString("\n") { it.toDebugString() } shouldEqual """
+        logEvents.joinToString("\n") { it.toDebugString() } shouldEqual """
             "true || false" or:0
             "true || false" or:0 left:0
             "true || false" or:0 left:0 or:0

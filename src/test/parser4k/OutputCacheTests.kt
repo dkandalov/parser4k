@@ -3,7 +3,8 @@ package parser4k
 import kotlin.test.Test
 
 class OutputCacheTests {
-    private val log = ParsingLog()
+    private val logEvents = ArrayList<ParsingEvent>()
+    private val log = ParsingLog { logEvents.add(it) }
     private val cache = OutputCache<Expression>()
 
     private val number = CommonParsers.number.map { Expression.Number(it.toBigDecimal()) }.with("num", log).with(cache)
@@ -20,10 +21,10 @@ class OutputCacheTests {
     }
 
     @Test fun `log events after parsing a number`() {
-        log.clear()
+        logEvents.clear()
         "123" shouldParseTo "123"
 
-        log.events().joinToString("\n") { it.toDebugString() } shouldEqual """
+        logEvents.joinToString("\n") { it.toDebugString() } shouldEqual """
             "123" plus:0
             "123" plus:0 minus:0
             "123" plus:0 minus:0 num:0
@@ -34,9 +35,9 @@ class OutputCacheTests {
     }
 
     private fun expectMinimalLog(f: () -> Unit) {
-        log.clear()
+        logEvents.clear()
         f()
-        val framesWithOutput = log.events().filterIsInstance<AfterParsing<*>>().map { it.stackTrace.last() }
+        val framesWithOutput = logEvents.filterIsInstance<AfterParsing<*>>().map { it.stackTrace.last() }
         framesWithOutput shouldEqual framesWithOutput.distinct()
     }
 

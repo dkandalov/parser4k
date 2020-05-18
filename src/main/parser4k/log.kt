@@ -1,7 +1,6 @@
 package parser4k
 
 import java.util.*
-import kotlin.collections.ArrayList
 
 fun <T> Parser<T>.with(parserId: String, log: ParsingLog) = object : Parser<T> {
     override fun parse(input: Input): Output<T>? {
@@ -12,23 +11,18 @@ fun <T> Parser<T>.with(parserId: String, log: ParsingLog) = object : Parser<T> {
     }
 }
 
-class ParsingLog {
+class ParsingLog(private val onEvent: (ParsingEvent) -> Unit = { println(it.toDebugString()) }) {
     private val idStack = LinkedList<String>()
     private val inputStack = LinkedList<Input>()
-    private val events = ArrayList<ParsingEvent>()
 
-    fun events(): List<ParsingEvent> = events
-
-    fun clear() = events.clear()
-
-    internal fun before(parserId: String, input: Input) {
+   internal fun before(parserId: String, input: Input) {
         idStack.push(parserId)
         inputStack.push(input)
-        events.add(BeforeParsing(input, stackTrace()))
+        onEvent(BeforeParsing(input, stackTrace()))
     }
 
     internal fun <T> after(parserId: String, output: Output<T>?) {
-        events.add(AfterParsing(inputStack.peek(), output, stackTrace()))
+        onEvent(AfterParsing(inputStack.peek(), output, stackTrace()))
         inputStack.pop()
         idStack.pop().let { id ->
             require(id == parserId) { "Expected id '$parserId' but was '$id'" }
