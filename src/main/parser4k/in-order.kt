@@ -5,16 +5,22 @@ package parser4k
 fun <T1, T3, R> Parser<List3<T1, *, T3>>.mapAsBinary(transform: (T1, T3) -> R) =
     map { (left, _, right) -> transform(left, right) }
 
-fun <T1, T3> InOrder3<T1, *, T3>.leftAssocAsBinary(transform: (T1, T3) -> T3) =
+fun <T> InOrder3<T, *, T>.leftAssocAsBinary(transform: (T, T) -> T) =
     leftAssoc { (left, _, right) -> transform(left, right) }
 
-fun <T1, T2, T3> InOrder3<T1, T2, T3>.leftAssoc(transform: (List3<T1, T2, T3>) -> T3) =
-    object : Parser<T3> {
-        override fun parse(input: Input): Output<T3>? {
-            val (payload1, input1) = parser1.parseWithInject(input) ?: return null
-            val (payload2, input2) = parser2.parse(input1) ?: return null
-            val (payload3, input3) = parser3.parseWithInject(input2) { transform(List3(payload1, payload2, it as T3)) } ?: return null
-            return Output(payload3, input3)
+fun <T1, T2, T3: T1> InOrder3<T1, T2, T3>.leftAssoc(transform: (List3<T1, T2, T3>) -> T1) =
+    object : Parser<T1> {
+        override fun parse(input: Input): Output<T1>? {
+            var output: Output<T1>? = null
+            var (payload, nextInput) = parser1.parseWithInject(input) ?: return null
+            while (nextInput.offset < nextInput.value.length) {
+                val (payload2, input2) = parser2.parse(nextInput) ?: return output
+                val (payload3, input3) = parser3.parseWithInject(input2) { transform(List3(payload, payload2, it as T3)) } ?: return output
+                payload = payload3
+                nextInput = input3
+                output = Output(payload, nextInput)
+            }
+            return output
         }
     }
 

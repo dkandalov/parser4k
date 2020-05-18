@@ -37,6 +37,9 @@ private object ExpressionLang {
         data class InArray(val left: Expr, val right: Expr) : Expr()
         data class NotInArray(val left: Expr, val right: Expr) : Expr()
         data class ArrayAccess(val left: Expr, val right: Expr) : Expr()
+
+        data class Identifier(val value: String) : Expr()
+        data class FieldAccess(val obj: Expr, val fieldName: Identifier) : Expr()
     }
 
     private val cache = OutputCache<Expr>()
@@ -80,6 +83,11 @@ private object ExpressionLang {
 
     private val paren = inOrder(token("("), ref { expr }, token(")")).map { (_, it, _) -> it }.with(cache)
 
+    private val identifier = CommonParsers.identifier.map(::Identifier)
+
+    private val fieldAccess = inOrder(nonRecRef { expr }, token("."), identifier)
+        .leftAssoc { (left, _, right) -> FieldAccess(left, right) }.with(cache)
+
     private val expr: Parser<Expr> = oneOfWithPrecedence(
         ifThenElse,
         or,
@@ -89,6 +97,7 @@ private object ExpressionLang {
         oneOf(plus, minus),
         oneOf(multiply, divide),
         oneOf(unaryMinus, not),
+        fieldAccess,
         arrayAccess.nestedPrecedence(),
         paren.nestedPrecedence(),
         oneOf(arrayLiteral, stringLiteral, intLiteral, boolLiteral)
@@ -125,6 +134,18 @@ private object ExpressionLang {
             is Or            -> (left.eval() as Boolean) || (right.eval() as Boolean)
             is Not           -> !(value.eval() as Boolean)
             is IfThenElse    -> if (cond.eval() as Boolean) ifTrue.eval() else ifFalse.eval()
+
+            is Identifier    -> error("")
+            is FieldAccess -> {
+                val obj = obj.eval()
+                val name = fieldName.value
+                // Not using reflection here because it's as slow as all other tests.
+                when {
+                    obj is List<*> && name == "size" -> obj.size
+                    obj is String && name == "size"  -> obj.length
+                    else                             -> error("Unsupported field '$name' on $obj")
+                }
+            }
         }
 }
 
@@ -215,5 +236,14 @@ class ExpressionLangTests {
 
         parse("if false then 1 else if false then 2 else 3") shouldEqual
             IfThenElse(False, IntLiteral(1), IfThenElse(False, IntLiteral(2), IntLiteral(3)))
+    }
+
+    @Test fun `field access expressions`() {
+        evaluate("[0,1,2].size") shouldEqual 3
+        evaluate("\"abcde\".size") shouldEqual 5
+
+        parse("1.foo") shouldEqual FieldAccess(IntLiteral(1), Identifier("foo"))
+        parse("1.foo.bar") shouldEqual FieldAccess(FieldAccess(IntLiteral(1), Identifier("foo")), Identifier("bar"))
+        parse("1.foo.bar.woof") shouldEqual FieldAccess(FieldAccess(FieldAccess(IntLiteral(1), Identifier("foo")), Identifier("bar")), Identifier("woof"))
     }
 }
