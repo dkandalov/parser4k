@@ -23,15 +23,16 @@ fun <T> oneOfWithPrecedence(parsers: List<Parser<T>>) = object : Parser<T> {
     override fun parse(input: Input): Output<T>? {
         val prevParser = stack.peek()
         val prevParserIndex = parsers.indexOf(prevParser)
+        val isNestedPrecedence = prevParser == null || prevParser is NestedPrecedence
         val filteredParsers =
-            if (prevParser == null || prevParser is NestedPrecedence) parsers
+            if (isNestedPrecedence) parsers
             else parsers.drop(parsers.indexOf(prevParser))
 
         filteredParsers.forEach { parser ->
             stack.push(parser)
             val parserIndex = parsers.indexOf(parser)
             val output =
-                if (parserIndex <= prevParserIndex) parser.parse(input)
+                if (parserIndex <= prevParserIndex && !isNestedPrecedence) parser.parse(input)
                 else parser.parseHidingInject(input)
             stack.pop()
             if (output != null) return output

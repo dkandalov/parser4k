@@ -70,9 +70,8 @@ private object ExpressionLang {
 
     private val inArray = binaryExpr("in", ::InArray)
     private val notInArray = binaryExpr("not in", ::NotInArray)
-    private val arrayAccess = inOrder(ref { expr }, token("["), ref { expr }, token("]"))
-        .map { (left, _, right, _) -> ArrayAccess(left, right) }
-        .with(cache)
+    private val arrayAccess = inOrder(ref { expr }, token("["), inOrder(ref { expr }, token("]")).skipLast())
+        .leftAssocAsBinary(::ArrayAccess).with(cache)
 
     private val and = binaryExpr("and", ::And)
     private val or = binaryExpr("or", ::Or)
@@ -100,7 +99,8 @@ private object ExpressionLang {
         fieldAccess,
         arrayAccess.nestedPrecedence(),
         paren.nestedPrecedence(),
-        oneOf(arrayLiteral, stringLiteral, intLiteral, boolLiteral)
+        arrayLiteral.nestedPrecedence(),
+        oneOf(stringLiteral, intLiteral, boolLiteral)
     ).reset(cache)
 
     fun parse(s: String) = s.parseWith(expr)
@@ -135,8 +135,8 @@ private object ExpressionLang {
             is Not           -> !(value.eval() as Boolean)
             is IfThenElse    -> if (cond.eval() as Boolean) ifTrue.eval() else ifFalse.eval()
 
-            is Identifier    -> error("")
-            is FieldAccess -> {
+            is Identifier    -> error("Should not be evaluated on its own")
+            is FieldAccess   -> {
                 val obj = obj.eval()
                 val name = fieldName.value
                 // Not using reflection here because it's as slow as all other tests.
@@ -162,6 +162,7 @@ class ExpressionLangTests {
 
         evaluate("[]") shouldEqual emptyList<Any>()
         evaluate("[1]") shouldEqual listOf(1)
+        evaluate("[1 + 2, 3 * 4]") shouldEqual listOf(3, 12)
         evaluate("[1, 2, 3]") shouldEqual listOf(1, 2, 3)
         evaluate("[[1]]") shouldEqual listOf(listOf(1))
         evaluate("[[1, 2], [3]]") shouldEqual listOf(listOf(1, 2), listOf(3))
@@ -196,6 +197,9 @@ class ExpressionLangTests {
         evaluate("[1, 2, 3][1]") shouldEqual 2
         evaluate("[1, 2, 3][2]") shouldEqual 3
         evaluate("[1, 2, 3][3 - 1]") shouldEqual 3
+
+        evaluate("[[123]][0]") shouldEqual listOf(123)
+        evaluate("[[123]][0][0]") shouldEqual 123
     }
 
     @Test fun `and, or, not expressions`() {
