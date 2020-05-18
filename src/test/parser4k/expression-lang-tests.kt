@@ -11,37 +11,6 @@ import parser4k.expressionlang.ExpressionLang.parse
 import kotlin.test.Test
 
 private object ExpressionLang {
-    sealed class Expr {
-        object True : Expr()
-        object False : Expr()
-        data class IntLiteral(val value: Int) : Expr()
-        data class StringLiteral(val value: String) : Expr()
-        data class ArrayLiteral(val value: List<Expr>) : Expr()
-
-        data class Equal(val left: Expr, val right: Expr) : Expr()
-        data class NotEqual(val left: Expr, val right: Expr) : Expr()
-        data class Less(val left: Expr, val right: Expr) : Expr()
-        data class Greater(val left: Expr, val right: Expr) : Expr()
-
-        data class Plus(val left: Expr, val right: Expr) : Expr()
-        data class Minus(val left: Expr, val right: Expr) : Expr()
-        data class Multiply(val left: Expr, val right: Expr) : Expr()
-        data class Divide(val left: Expr, val right: Expr) : Expr()
-        data class UnaryMinus(val value: Expr) : Expr()
-
-        data class And(val left: Expr, val right: Expr) : Expr()
-        data class Or(val left: Expr, val right: Expr) : Expr()
-        data class Not(val value: Expr) : Expr()
-        data class IfThenElse(val cond: Expr, val ifTrue: Expr, val ifFalse: Expr) : Expr()
-
-        data class InArray(val left: Expr, val right: Expr) : Expr()
-        data class NotInArray(val left: Expr, val right: Expr) : Expr()
-        data class ArrayAccess(val left: Expr, val right: Expr) : Expr()
-
-        data class Identifier(val value: String) : Expr()
-        data class FieldAccess(val obj: Expr, val fieldName: Identifier) : Expr()
-    }
-
     private val cache = OutputCache<Expr>()
 
     private fun binaryExpr(tokenString: String, f: (Expr, Expr) -> Expr) =
@@ -103,9 +72,40 @@ private object ExpressionLang {
         oneOf(stringLiteral, intLiteral, boolLiteral)
     ).reset(cache)
 
-    fun parse(s: String) = s.parseWith(expr)
+    fun parse(s: String): Expr = s.parseWith(expr)
 
-    fun evaluate(s: String) = s.parseWith(expr).eval()
+    fun evaluate(s: String): Any = s.parseWith(expr).eval()
+
+    sealed class Expr {
+        object True : Expr()
+        object False : Expr()
+        data class IntLiteral(val value: Int) : Expr()
+        data class StringLiteral(val value: String) : Expr()
+        data class ArrayLiteral(val value: List<Expr>) : Expr()
+
+        data class Equal(val left: Expr, val right: Expr) : Expr()
+        data class NotEqual(val left: Expr, val right: Expr) : Expr()
+        data class Less(val left: Expr, val right: Expr) : Expr()
+        data class Greater(val left: Expr, val right: Expr) : Expr()
+
+        data class Plus(val left: Expr, val right: Expr) : Expr()
+        data class Minus(val left: Expr, val right: Expr) : Expr()
+        data class Multiply(val left: Expr, val right: Expr) : Expr()
+        data class Divide(val left: Expr, val right: Expr) : Expr()
+        data class UnaryMinus(val value: Expr) : Expr()
+
+        data class And(val left: Expr, val right: Expr) : Expr()
+        data class Or(val left: Expr, val right: Expr) : Expr()
+        data class Not(val value: Expr) : Expr()
+        data class IfThenElse(val cond: Expr, val ifTrue: Expr, val ifFalse: Expr) : Expr()
+
+        data class InArray(val left: Expr, val right: Expr) : Expr()
+        data class NotInArray(val left: Expr, val right: Expr) : Expr()
+        data class ArrayAccess(val left: Expr, val right: Expr) : Expr()
+
+        data class Identifier(val value: String) : Expr()
+        data class FieldAccess(val obj: Expr, val fieldName: Identifier) : Expr()
+    }
 
     private fun Expr.eval(): Any =
         when (this) {
