@@ -2,13 +2,8 @@
 
 package parser4k
 
-fun <T1, T3, R> Parser<List3<T1, *, T3>>.mapAsBinary(transform: (T1, T3) -> R) = object : Parser<R> {
-    override fun parse(input: Input): Output<R>? {
-        val (payload, nextInput) = this@mapAsBinary.parse(input) ?: return null
-        val (left, _, right) = payload
-        return Output(transform(left, right), nextInput)
-    }
-}
+fun <T1, T3, R> Parser<List3<T1, *, T3>>.mapAsBinary(transform: (T1, T3) -> R) =
+    map { (left, _, right) -> transform(left, right) }
 
 fun <T1, T3> InOrder3<T1, *, T3>.leftAssocAsBinary(transform: (T1, T3) -> T3) =
     leftAssoc { (left, _, right) -> transform(left, right) }
