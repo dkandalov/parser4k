@@ -33,9 +33,9 @@ sealed class Expression {
 fun Expression.toExpressionString(): String =
     when (this) {
         is Expression.Number   -> value.toString()
-        is Expression.Plus     -> "[${left.toExpressionString()} + ${right.toExpressionString()}]"
-        is Expression.Minus    -> "[${left.toExpressionString()} - ${right.toExpressionString()}]"
-        is Expression.Multiply -> "[${left.toExpressionString()} * ${right.toExpressionString()}]"
-        is Expression.Divide   -> "[${left.toExpressionString()} / ${right.toExpressionString()}]"
-        is Expression.Power    -> "[${left.toExpressionString()} ^ ${right.toExpressionString()}]"
+        is Expression.Plus     -> "(${left.toExpressionString()} + ${right.toExpressionString()})"
+        is Expression.Minus    -> "(${left.toExpressionString()} - ${right.toExpressionString()})"
+        is Expression.Multiply -> "(${left.toExpressionString()} * ${right.toExpressionString()})"
+        is Expression.Divide   -> "(${left.toExpressionString()} / ${right.toExpressionString()})"
+        is Expression.Power    -> "(${left.toExpressionString()} ^ ${right.toExpressionString()})"
     }

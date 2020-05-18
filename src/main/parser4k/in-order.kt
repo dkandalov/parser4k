@@ -12,6 +12,7 @@ fun <T2> InOrder3<*, T2, *>.skipWrapper(): Parser<T2> = map { (_, it, _) -> it }
 fun <T2, T3> InOrder4<*, T2, T3, *>.skipWrapper(): Parser<List2<T2, T3>> = map { (_, it1, it2, _) -> List2(it1, it2) }
 
 fun <T1> InOrder2<T1, *>.skipLast(): Parser<T1> = map { (it, _) -> it }
+fun <T1, T2> InOrder3<T1, T2, *>.skipLast(): Parser<List2<T1, T2>> = map { (it1, it2, _) -> List2(it1, it2) }
 fun <T1, T2, T3> InOrder4<T1, T2, T3, *>.skipLast(): Parser<List3<T1, T2, T3>> = map { (it1, it2, it3, _) -> List3(it1, it2, it3) }
 
 fun <T1, T2, T3: T1> InOrder3<T1, T2, T3>.leftAssoc(transform: (List3<T1, T2, T3>) -> T1) =

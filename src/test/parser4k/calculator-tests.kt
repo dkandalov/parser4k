@@ -26,10 +26,10 @@ class NoneRecursiveParserTests {
 
     @Test fun `it works`() {
         "123" shouldParseTo "123"
-        "1 + 2" shouldParseTo "[1 + 2]"
-        "1 - 2" shouldParseTo "[1 - 2]"
-        "1 + 2 + 3" shouldParseTo "[[1 + 2] + 3]"
-        "1 + 2 - 3" shouldParseTo "[[1 + 2] - 3]"
+        "1 + 2" shouldParseTo "(1 + 2)"
+        "1 - 2" shouldParseTo "(1 - 2)"
+        "1 + 2 + 3" shouldParseTo "((1 + 2) + 3)"
+        "1 + 2 - 3" shouldParseTo "((1 + 2) - 3)"
     }
 
     private infix fun String.shouldParseTo(expected: String) = parseWith(expression).toExpressionString() shouldEqual expected
@@ -40,13 +40,13 @@ class RecursiveParserTests {
     private val expr: Parser<Expression> = oneOf(power, number)
 
     @Test fun `it works`() {
-        "123" shouldParseTo "123"
-        "1 ^ 2" shouldParseTo "[1 ^ 2]"
-        "1 ^ 2 ^ 3" shouldParseTo "[1 ^ [2 ^ 3]]"
-        "1 ^ 2 ^ 3 ^ 4" shouldParseTo "[1 ^ [2 ^ [3 ^ 4]]]"
+        "123" shouldParseAs "123"
+        "1 ^ 2" shouldParseAs "(1 ^ 2)"
+        "1 ^ 2 ^ 3" shouldParseAs "(1 ^ (2 ^ 3))"
+        "1 ^ 2 ^ 3 ^ 4" shouldParseAs "(1 ^ (2 ^ (3 ^ 4)))"
     }
 
-    private infix fun String.shouldParseTo(expected: String) = parseWith(expr).toExpressionString() shouldEqual expected
+    private infix fun String.shouldParseAs(expected: String) = parseWith(expr).toExpressionString() shouldEqual expected
 }
 
 class ParserPrecedenceTests {
@@ -62,24 +62,24 @@ class ParserPrecedenceTests {
     )
 
     @Test fun `it works`() {
-        "123" shouldParseTo "123"
-        "1 + 2" shouldParseTo "[1 + 2]"
-        "1 * 2" shouldParseTo "[1 * 2]"
-        "1 + 2 + 3" shouldParseTo "[1 + [2 + 3]]"
-        "1 * 2 * 3" shouldParseTo "[1 * [2 * 3]]"
-        "1 * 2 + 3" shouldParseTo "[[1 * 2] + 3]"
-        "1 + 2 * 3" shouldParseTo "[1 + [2 * 3]]"
+        "123" shouldParseAs "123"
+        "1 + 2" shouldParseAs "(1 + 2)"
+        "1 * 2" shouldParseAs "(1 * 2)"
+        "1 + 2 + 3" shouldParseAs "(1 + (2 + 3))"
+        "1 * 2 * 3" shouldParseAs "(1 * (2 * 3))"
+        "1 * 2 + 3" shouldParseAs "((1 * 2) + 3)"
+        "1 + 2 * 3" shouldParseAs "(1 + (2 * 3))"
 
-        "(123)" shouldParseTo "123"
-        "((123))" shouldParseTo "123"
-        "(1 + 2) * 3" shouldParseTo "[[1 + 2] * 3]"
-        "1 + (2 * 3)" shouldParseTo "[1 + [2 * 3]]"
-        "((1 + 2) * 3)" shouldParseTo "[[1 + 2] * 3]"
+        "(123)" shouldParseAs "123"
+        "((123))" shouldParseAs "123"
+        "(1 + 2) * 3" shouldParseAs "((1 + 2) * 3)"
+        "1 + (2 * 3)" shouldParseAs "(1 + (2 * 3))"
+        "((1 + 2) * 3)" shouldParseAs "((1 + 2) * 3)"
 
-        "(1 + 2) + (3 + 4)" shouldParseTo "[[1 + 2] + [3 + 4]]"
+        "(1 + 2) + (3 + 4)" shouldParseAs "((1 + 2) + (3 + 4))"
     }
 
-    private infix fun String.shouldParseTo(expected: String) = parseWith(expr).toExpressionString() shouldEqual expected
+    private infix fun String.shouldParseAs(expected: String) = parseWith(expr).toExpressionString() shouldEqual expected
 }
 
 interface IEvaluate {
