@@ -54,7 +54,7 @@ private object ExpressionLang {
     private val intLiteral = CommonParsers.integer.map { IntLiteral(it.toInt()) }
     private val stringLiteral = CommonParsers.string.map { StringLiteral(it) }
     private val arrayLiteral = inOrder(token("["), ref { expr }.joinedWith(token(",")), token("]"))
-        .map { (_, list, _) -> ArrayLiteral(list) }
+        .skipWrapper().map(::ArrayLiteral)
         .with(cache)
 
     private val equal = binaryExpr("==", ::Equal)
@@ -81,11 +81,11 @@ private object ExpressionLang {
         .map { (_, cond, _, ifTrue, _, ifFalse) -> IfThenElse(cond, ifTrue, ifFalse) }
         .with(cache)
 
-    private val paren = inOrder(token("("), ref { expr }, token(")")).map { (_, it, _) -> it }.with(cache)
+    private val paren = inOrder(token("("), ref { expr }, token(")")).skipWrapper().with(cache)
 
     private val identifier = CommonParsers.identifier.map(::Identifier)
 
-    private val fieldAccess = inOrder(nonRecRef { expr }, token("."), identifier)
+    private val fieldAccess = inOrder(ref { expr }, token("."), identifier)
         .leftAssoc { (left, _, right) -> FieldAccess(left, right) }.with(cache)
 
     private val expr: Parser<Expr> = oneOfWithPrecedence(

@@ -19,7 +19,7 @@ object CommonParsers {
         .map { (_, it, _) -> it.joinToString("") }
 
     fun token(s: String): Parser<String> =
-        inOrder(zeroOrMore(whitespace), str(s), zeroOrMore(whitespace)).map { (_, op, _) -> op }
+        inOrder(zeroOrMore(whitespace), str(s), zeroOrMore(whitespace)).skipWrapper()
 
     fun <T> Parser<T>.joinedWith(separator: Parser<*>): Parser<List<T>> =
         optional(inOrder(this, repeat(inOrder(separator, this))))
