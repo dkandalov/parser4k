@@ -1,18 +1,21 @@
 package parser4k
 
+interface Parser<out T> {
+    fun parse(input: Input): Output<T>?
+}
+
 data class Input(
     val value: String,
     val offset: Int = 0,
     val injectPayload: InjectPayload? = null
 )
 
+data class Output<out T>(
+    val payload: T,
+    val nextInput: Input
+)
+
 fun interface InjectPayload: (Any?) -> Any?
-
-data class Output<out T>(val payload: T, val input: Input)
-
-interface Parser<out T> {
-    fun parse(input: Input): Output<T>?
-}
 
 fun <T, R> Parser<T>.map(transform: (T) -> R) = object : Parser<R> {
     override fun parse(input: Input): Output<R>? {

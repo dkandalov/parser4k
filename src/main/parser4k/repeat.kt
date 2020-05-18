@@ -6,7 +6,7 @@ fun <T> repeat(parser: Parser<T>, atLeast: Int = 0, atMost: Int = Int.MAX_VALUE)
         var nextInput = input
         while (true) {
             val output = parser.parse(nextInput) ?: break
-            nextInput = output.input
+            nextInput = output.nextInput
             payload.add(output.payload)
             if (payload.size == atMost) break
         }

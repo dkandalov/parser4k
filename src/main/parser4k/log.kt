@@ -46,7 +46,7 @@ data class StackFrame(val parserId: String, val offset: Int)
 fun ParsingEvent.toDebugString() =
     when (this) {
         is BeforeParsing   -> "${input.string()} ${stackTrace.string()}"
-        is AfterParsing<*> -> "${input.string()} ${stackTrace.string()} -- ${if (output == null) "X" else input.diff(output.input) }"
+        is AfterParsing<*> -> "${input.string()} ${stackTrace.string()} -- ${if (output == null) "X" else input.diff(output.nextInput) }"
     }
 
 private fun Input.diff(that: Input) = value.substring(this.offset, that.offset)

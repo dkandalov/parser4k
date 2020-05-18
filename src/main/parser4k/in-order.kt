@@ -29,7 +29,7 @@ class InOrder<T>(val parsers: List<Parser<T>>) : Parser<List<T>> {
         var nextInput = input
         parsers.forEach { parser ->
             val output = parser.parse(nextInput) ?: return null
-            nextInput = output.input
+            nextInput = output.nextInput
             payload.add(output.payload)
         }
         return Output(payload, nextInput)
