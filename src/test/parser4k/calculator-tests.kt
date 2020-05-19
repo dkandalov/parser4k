@@ -3,7 +3,7 @@
 package parser4k.calculatortests
 
 import parser4k.*
-import parser4k.CommonParsers.token
+import parser4k.commonparsers.token
 import parser4k.Expression.*
 import parser4k.Expression.Number
 import java.math.BigDecimal

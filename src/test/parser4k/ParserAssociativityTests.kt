@@ -1,6 +1,6 @@
 package parser4k
 
-import parser4k.CommonParsers.token
+import parser4k.commonparsers.token
 import kotlin.test.Test
 
 class ParserAssociativityTests {

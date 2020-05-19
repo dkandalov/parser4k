@@ -3,8 +3,9 @@
 package parser4k.expressionlang
 
 import parser4k.*
-import parser4k.CommonParsers.joinedWith
-import parser4k.CommonParsers.token
+import parser4k.commonparsers.Tokens
+import parser4k.commonparsers.joinedWith
+import parser4k.commonparsers.token
 import parser4k.expressionlang.ExpressionLang.Expr.*
 import parser4k.expressionlang.ExpressionLang.evaluate
 import parser4k.expressionlang.ExpressionLang.parse
@@ -20,8 +21,8 @@ private object ExpressionLang {
         inOrder(token(tokenString), ref { expr }).map { (_, it) -> f(it) }.with(cache)
 
     private val boolLiteral = oneOf(str("true"), str("false")).map { if (it == "true") True else False }
-    private val intLiteral = CommonParsers.integer.map { IntLiteral(it.toInt()) }
-    private val stringLiteral = CommonParsers.string.map { StringLiteral(it) }
+    private val intLiteral = Tokens.integer.map { IntLiteral(it.toInt()) }
+    private val stringLiteral = Tokens.string.map { StringLiteral(it) }
     private val arrayLiteral = inOrder(token("["), ref { expr }.joinedWith(token(",")), token("]"))
         .skipWrapper().map(::ArrayLiteral)
         .with(cache)
@@ -51,7 +52,7 @@ private object ExpressionLang {
 
     private val paren = inOrder(token("("), ref { expr }, token(")")).skipWrapper().with(cache)
 
-    private val identifier = CommonParsers.identifier.map(::Identifier)
+    private val identifier = Tokens.identifier.map(::Identifier)
 
     private val fieldAccess = inOrder(ref { expr }, token("."), identifier)
         .leftAssoc { (left, _, right) -> FieldAccess(left, right) }.with(cache)
