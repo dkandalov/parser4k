@@ -1,5 +1,7 @@
 package parser4k
 
+import org.intellij.lang.annotations.Language
+
 fun str(s: String) = object : Parser<String> {
     override fun parse(input: Input): Output<String>? = input.run {
         val newOffset = offset + s.length
@@ -11,7 +13,7 @@ fun str(s: String) = object : Parser<String> {
     }
 }
 
-fun regex(pattern: String) = object : Parser<String> {
+fun regex(@Language("RegExp") pattern: String) = object : Parser<String> {
     val regex = pattern.toRegex()
 
     override fun parse(input: Input): Output<String>? {
