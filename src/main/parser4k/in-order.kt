@@ -8,23 +8,51 @@ fun <T1, T3, R> Parser<List3<T1, *, T3>>.mapAsBinary(transform: (T1, T3) -> R): 
 fun <T> InOrder3<T, *, T>.leftAssocAsBinary(transform: (T, T) -> T): Parser<T> =
     leftAssoc { (left, _, right) -> transform(left, right) }
 
-fun <T2> InOrder3<*, T2, *>.skipWrapper(): Parser<T2> = map { (_, it, _) -> it }
-fun <T2, T3> InOrder4<*, T2, T3, *>.skipWrapper(): Parser<List2<T2, T3>> = map { (_, it1, it2, _) -> List2(it1, it2) }
+fun <T> Parser<*>.skip(): Parser<T> = object : Parser<T> {
+    override fun parse(input: Input): Output<T>? {
+        val (_, nextInput) = this@skip.parse(input) ?: return null
+        return Output(null as T, nextInput)
+    }
+}
 
-fun <T1> InOrder2<T1, *>.skipLast(): Parser<T1> = map { (it, _) -> it }
-fun <T1, T2> InOrder3<T1, T2, *>.skipLast(): Parser<List2<T1, T2>> = map { (it1, it2, _) -> List2(it1, it2) }
-fun <T1, T2, T3> InOrder4<T1, T2, T3, *>.skipLast(): Parser<List3<T1, T2, T3>> = map { (it1, it2, it3, _) -> List3(it1, it2, it3) }
+fun <T2> InOrder3<*, T2, *>.skipWrapper() = map { (_, it, _) -> it }
+fun <T2, T3> InOrder4<*, T2, T3, *>.skipWrapper() = map { (_, it2, it3, _) -> List2(it2, it3) }
+fun <T2, T3, T4> InOrder5<*, T2, T3, T4, *>.skipWrapper() = map { (_, it2, it3, it4, _) -> List3(it2, it3, it4) }
+fun <T2, T3, T4, T5> InOrder6<*, T2, T3, T4, T5, *>.skipWrapper() = map { (_, it2, it3, it4, it5, _) -> List4(it2, it3, it4, it5) }
+fun <T2, T3, T4, T5, T6> InOrder7<*, T2, T3, T4, T5, T6, *>.skipWrapper() = map { (_, it2, it3, it4, it5, it6, _) -> List5(it2, it3, it4, it5, it6) }
+fun <T2, T3, T4, T5, T6, T7> InOrder8<*, T2, T3, T4, T5, T6, T7, *>.skipWrapper() = map { (_, it2, it3, it4, it5, it6, it7, _) -> List6(it2, it3, it4, it5, it6, it7) }
 
-fun <T1, T2, T3: T1> InOrder3<T1, T2, T3>.leftAssoc(transform: (List3<T1, T2, T3>) -> T1) =
-    object : Parser<T1> {
-        override fun parse(input: Input): Output<T1>? {
-            var output: Output<T1>? = null
-            var (payload, nextInput) = parser1.parseWithInject(input) ?: return null
+fun <T1> InOrder2<T1, *>.skipLast() = map { (it, _) -> it }
+fun <T1, T2> InOrder3<T1, T2, *>.skipLast() = map { (it1, it2, _) -> List2(it1, it2) }
+fun <T1, T2, T3> InOrder4<T1, T2, T3, *>.skipLast() = map { (it1, it2, it3, _) -> List3(it1, it2, it3) }
+
+fun <T1, T2, T3> InOrder3<T1, T2, T3>.leftAssoc(transform: (List3<T1, T2, T3>) -> T1) =
+    InOrder(listOf(parser1, parser2, parser3))
+        .leftAssoc { (it1, it2, it3) -> transform(List3(it1 as T1, it2 as T2, it3 as T3)) } as Parser<T1>
+
+fun <T1, T2, T3, T4> InOrder4<T1, T2, T3, T4>.leftAssoc(transform: (List4<T1, T2, T3, T4>) -> T1) =
+    InOrder(listOf(parser1, parser2, parser3, parser4))
+        .leftAssoc { (it1, it2, it3, it4) -> transform(List4(it1 as T1, it2 as T2, it3 as T3, it4 as T4)) } as Parser<T1>
+
+fun <T> InOrder<T>.leftAssoc(transform: (List<T>) -> T) =
+    object : Parser<T> {
+        override fun parse(input: Input): Output<T>? {
+            val firstParser = parsers.first()
+            val innerParsers = parsers.drop(1).dropLast(1)
+            val lastParser = parsers.last()
+
+            var output: Output<T>? = null
+            var (payload, nextInput) = firstParser.parseWithInject(input) ?: return null
             while (nextInput.offset < nextInput.value.length) {
-                val (payload2, input2) = parser2.parse(nextInput) ?: return output
-                val (payload3, input3) = parser3.parseWithInject(input2) { transform(List3(payload, payload2, it as T3)) } ?: return output
-                payload = payload3
-                nextInput = input3
+                val payloads = ArrayList<T>()
+                innerParsers.forEach { parser ->
+                    val output_ = parser.parse(nextInput) ?: return output
+                    payloads.add(output_.payload)
+                    nextInput = output_.nextInput
+                }
+                val output_ = lastParser.parseWithInject(nextInput) { transform(listOf(payload) + payloads + it as T) } ?: return output
+                payload = output_.payload
+                nextInput = output_.nextInput
                 output = Output(payload, nextInput)
             }
             return output

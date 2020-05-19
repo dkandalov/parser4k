@@ -40,8 +40,8 @@ private object ExpressionLang {
 
     private val inArray = binaryExpr("in", ::InArray)
     private val notInArray = binaryExpr("not in", ::NotInArray)
-    private val arrayAccess = inOrder(ref { expr }, token("["), inOrder(ref { expr }, token("]")).skipLast())
-        .leftAssocAsBinary(::ArrayAccess).with(cache)
+    private val arrayAccess = inOrder(ref { expr }, token("["), ref { expr }, token("]"))
+        .leftAssoc{ (left, _, right) -> ArrayAccess(left, right) }.with(cache)
 
     private val and = binaryExpr("and", ::And)
     private val or = binaryExpr("or", ::Or)
@@ -56,6 +56,9 @@ private object ExpressionLang {
 
     private val fieldAccess = inOrder(ref { expr }, token("."), identifier)
         .leftAssoc { (left, _, right) -> FieldAccess(left, right) }.with(cache)
+
+//    private val funAccess = inOrder(ref { expr }, token("."), inOrder(identifier, token("("), ref { expr }, token(")")))
+//        .leftAssoc {  }.with(cache)
 
     private val expr: Parser<Expr> = oneOfWithPrecedence(
         ifThenElse,
@@ -106,6 +109,7 @@ private object ExpressionLang {
 
         data class Identifier(val value: String) : Expr()
         data class FieldAccess(val obj: Expr, val fieldName: Identifier) : Expr()
+        data class FunCall(val obj: Expr, val funName: Identifier, val arg: Expr) : Expr()
     }
 
     private fun Expr.eval(): Any =
@@ -147,6 +151,7 @@ private object ExpressionLang {
                     else                             -> error("Unsupported field '$name' on $obj")
                 }
             }
+            is FunCall       -> TODO()
         }
 }
 

@@ -59,8 +59,9 @@ class ParserAssociativityAndNestedPrecedenceTests {
     private val accessByIndex = inOrder(
         nonRecRef { expr },
         token("["),
-        inOrder(ref { expr }, token("]")).skipLast()
-    ).leftAssocAsBinary(::AccessByIndex)
+        ref { expr },
+        token("]")
+    ).leftAssoc { (left, _, right, _) -> AccessByIndex(left, right) }
 
     private val expr: Parser<Node> = oneOfWithPrecedence(plus, accessByIndex.nestedPrecedence(), number)
 
