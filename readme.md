@@ -19,13 +19,15 @@ object MinimalCalculator {
 
     val number = regex("\\d+").map { it.toBigDecimal() }.with(cache)
     val paren = inOrder(token("("), ref { expr }, token(")")).skipWrapper().with(cache)
+
     val power = binaryExpr("^").map { (l, _, r) -> l.pow(r.toInt()) }.with(cache)
     val divide = binaryExpr("/").leftAssoc { (l, _, r) -> l.divide(r) }.with(cache)
     val multiply = binaryExpr("*").leftAssoc { (l, _, r) -> l * r }.with(cache)
+
     val minus = binaryExpr("-").leftAssoc { (l, _, r) -> l - r }.with(cache)
     val plus = binaryExpr("+").leftAssoc { (l, _, r) -> l + r }.with(cache)
 
-    private val expr: Parser<BigDecimal> = oneOfWithPrecedence(
+    val expr: Parser<BigDecimal> = oneOfWithPrecedence(
         oneOf(plus, minus),
         oneOf(multiply, divide),
         power,
@@ -33,6 +35,6 @@ object MinimalCalculator {
         number
     ).reset(cache)
 
-    override fun evaluate(s: String) = s.parseWith(expr)
+    fun evaluate(s: String) = s.parseWith(expr)
 }
 ```

@@ -82,11 +82,7 @@ class ParserPrecedenceTests {
     private infix fun String.shouldParseAs(expected: String) = parseWith(expr).toExpressionString() shouldEqual expected
 }
 
-interface IEvaluate {
-    fun evaluate(s: String): BigDecimal
-}
-
-private object Calculator : IEvaluate {
+private object Calculator {
     private val cache = OutputCache<Expression>()
 
     private val number = regex("\\d+").map { Number(it.toBigDecimal()) }
@@ -105,7 +101,7 @@ private object Calculator : IEvaluate {
         number
     ).reset(cache)
 
-    override fun evaluate(s: String) = s.parseWith(expr).evaluate()
+    fun evaluate(s: String) = s.parseWith(expr).evaluate()
 
     private fun Expression.evaluate(): BigDecimal =
         when (this) {
@@ -118,19 +114,21 @@ private object Calculator : IEvaluate {
         }
 }
 
-private object MinimalCalculator : IEvaluate {
+private object MinimalCalculator {
     val cache = OutputCache<BigDecimal>()
     fun binaryExpr(s: String) = inOrder(ref { expr }, token(s), ref { expr })
 
     val number = regex("\\d+").map { it.toBigDecimal() }.with(cache)
     val paren = inOrder(token("("), ref { expr }, token(")")).skipWrapper().with(cache)
+
     val power = binaryExpr("^").map { (l, _, r) -> l.pow(r.toInt()) }.with(cache)
     val divide = binaryExpr("/").leftAssoc { (l, _, r) -> l.divide(r) }.with(cache)
     val multiply = binaryExpr("*").leftAssoc { (l, _, r) -> l * r }.with(cache)
+
     val minus = binaryExpr("-").leftAssoc { (l, _, r) -> l - r }.with(cache)
     val plus = binaryExpr("+").leftAssoc { (l, _, r) -> l + r }.with(cache)
 
-    private val expr: Parser<BigDecimal> = oneOfWithPrecedence(
+    val expr: Parser<BigDecimal> = oneOfWithPrecedence(
         oneOf(plus, minus),
         oneOf(multiply, divide),
         power,
@@ -138,24 +136,24 @@ private object MinimalCalculator : IEvaluate {
         number
     ).reset(cache)
 
-    override fun evaluate(s: String) = s.parseWith(expr)
+    fun evaluate(s: String) = s.parseWith(expr)
 }
 
 
 class CalculatorTests {
-    @Test fun `valid input`() = listOf(Calculator, MinimalCalculator).forEach {
-        it.evaluate("1") shouldEqual BigDecimal(1)
-        it.evaluate("1 + 2") shouldEqual BigDecimal(3)
-        it.evaluate("1 + 2 * 3") shouldEqual BigDecimal(7)
-        it.evaluate("1 - 2 * 3") shouldEqual BigDecimal(-5)
-        it.evaluate("1 - 2 * 3 + 4 / 5") shouldEqual BigDecimal("-4.2")
-        it.evaluate("(1 + 2) * 3 - 4 / 5") shouldEqual BigDecimal("8.2")
-        it.evaluate("(1 + 2) * (3 - 4) / 5") shouldEqual BigDecimal("-0.6")
-        it.evaluate("2^12 - 2^10") shouldEqual BigDecimal(3072)
+    @Test fun `valid input`() = listOf(Calculator::evaluate, MinimalCalculator::evaluate).forEach { evaluate ->
+        evaluate("1") shouldEqual BigDecimal(1)
+        evaluate("1 + 2") shouldEqual BigDecimal(3)
+        evaluate("1 + 2 * 3") shouldEqual BigDecimal(7)
+        evaluate("1 - 2 * 3") shouldEqual BigDecimal(-5)
+        evaluate("1 - 2 * 3 + 4 / 5") shouldEqual BigDecimal("-4.2")
+        evaluate("(1 + 2) * 3 - 4 / 5") shouldEqual BigDecimal("8.2")
+        evaluate("(1 + 2) * (3 - 4) / 5") shouldEqual BigDecimal("-0.6")
+        evaluate("2^12 - 2^10") shouldEqual BigDecimal(3072)
     }
 
-    @Test fun `large valid input`() = listOf(Calculator, MinimalCalculator).forEach {
-        it.evaluate(List(1000) { "1" }.joinToString("+")) shouldEqual BigDecimal(1000)
+    @Test fun `large valid input`() = listOf(Calculator::evaluate, MinimalCalculator::evaluate).forEach { evaluate ->
+        evaluate(List(1000) { "1" }.joinToString("+")) shouldEqual BigDecimal(1000)
     }
 
     @Test fun `invalid input`() {
