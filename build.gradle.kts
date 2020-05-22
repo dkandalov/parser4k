@@ -3,10 +3,10 @@ import org.jetbrains.kotlin.gradle.tasks.*
 
 plugins {
     java
-    kotlin("jvm") version "1.4-M1"
+    kotlin("jvm") version "1.3.72"
 }
 group = "parser4k"
-version = "0.1"
+version = "0.01"
 
 repositories {
     mavenCentral()

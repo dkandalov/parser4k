@@ -50,7 +50,9 @@ fun <T> InOrder<T>.leftAssoc(transform: (List<T>) -> T) =
                     payloads.add(output_.payload)
                     nextInput = output_.nextInput
                 }
-                val output_ = lastParser.parseWithInject(nextInput) { transform(listOf(payload) + payloads + it as T) } ?: return output
+                val output_ = lastParser.parseWithInject(nextInput, object : InjectPayload {
+                    override fun invoke(it: Any?) = transform(listOf(payload) + payloads + it as T)
+                }) ?: return output
                 payload = output_.payload
                 nextInput = output_.nextInput
                 output = Output(payload, nextInput)

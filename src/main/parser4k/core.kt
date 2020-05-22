@@ -15,7 +15,7 @@ data class Output<out T>(
     val nextInput: Input
 )
 
-fun interface InjectPayload: (Any?) -> Any?
+interface InjectPayload: (Any?) -> Any?
 
 fun <T, R> Parser<T>.map(transform: (T) -> R) = object : Parser<R> {
     override fun parse(input: Input): Output<R>? {
