@@ -15,17 +15,6 @@ fun <T> Parser<*>.skip(): Parser<T> = object : Parser<T> {
     }
 }
 
-fun <T2> InOrder3<*, T2, *>.skipWrapper() = map { (_, it, _) -> it }
-fun <T2, T3> InOrder4<*, T2, T3, *>.skipWrapper() = map { (_, it2, it3, _) -> List2(it2, it3) }
-fun <T2, T3, T4> InOrder5<*, T2, T3, T4, *>.skipWrapper() = map { (_, it2, it3, it4, _) -> List3(it2, it3, it4) }
-fun <T2, T3, T4, T5> InOrder6<*, T2, T3, T4, T5, *>.skipWrapper() = map { (_, it2, it3, it4, it5, _) -> List4(it2, it3, it4, it5) }
-fun <T2, T3, T4, T5, T6> InOrder7<*, T2, T3, T4, T5, T6, *>.skipWrapper() = map { (_, it2, it3, it4, it5, it6, _) -> List5(it2, it3, it4, it5, it6) }
-fun <T2, T3, T4, T5, T6, T7> InOrder8<*, T2, T3, T4, T5, T6, T7, *>.skipWrapper() = map { (_, it2, it3, it4, it5, it6, it7, _) -> List6(it2, it3, it4, it5, it6, it7) }
-
-fun <T1> InOrder2<T1, *>.skipLast() = map { (it, _) -> it }
-fun <T1, T2> InOrder3<T1, T2, *>.skipLast() = map { (it1, it2, _) -> List2(it1, it2) }
-fun <T1, T2, T3> InOrder4<T1, T2, T3, *>.skipLast() = map { (it1, it2, it3, _) -> List3(it1, it2, it3) }
-
 fun <T1, T2, T3> InOrder3<T1, T2, T3>.leftAssoc(transform: (List3<T1, T2, T3>) -> T1) =
     InOrder(listOf(parser1, parser2, parser3))
         .leftAssoc { (it1, it2, it3) -> transform(List3(it1 as T1, it2 as T2, it3 as T3)) } as Parser<T1>
