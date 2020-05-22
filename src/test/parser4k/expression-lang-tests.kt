@@ -52,13 +52,13 @@ private object ExpressionLang {
 
     private val paren = inOrder(token("("), ref { expr }, token(")")).skipWrapper().with(cache)
 
-    private val identifier = Tokens.identifier.map(::Identifier)
+    private val dot = inOrder(ref { expr }, token("."), ref { expr })
+        .leftAssocAsBinary(::Dot).with(cache)
 
-    private val fieldAccess = inOrder(ref { expr }, token("."), identifier)
-        .leftAssoc { (left, _, right) -> FieldAccess(left, right) }.with(cache)
+    private val fieldAccess = Tokens.identifier.map(::FieldAccess).with(cache)
 
-//    private val funAccess = inOrder(ref { expr }, token("."), inOrder(identifier, token("("), ref { expr }, token(")")))
-//        .leftAssoc {  }.with(cache)
+    private val functionCall = inOrder(Tokens.identifier, token("()"))
+        .map { (name) -> FunctionCall(name) }.with(cache)
 
     private val expr: Parser<Expr> = oneOfWithPrecedence(
         ifThenElse,
@@ -69,11 +69,15 @@ private object ExpressionLang {
         oneOf(plus, minus),
         oneOf(multiply, divide),
         oneOf(unaryMinus, not),
-        fieldAccess,
+        dot,
         arrayAccess.nestedPrecedence(),
         paren.nestedPrecedence(),
         arrayLiteral.nestedPrecedence(),
-        oneOf(stringLiteral, intLiteral, boolLiteral)
+        oneOf(stringLiteral, intLiteral, boolLiteral),
+        oneOfLongest(
+            fieldAccess,
+            functionCall
+        )
     ).reset(cache)
 
     fun parse(s: String): Expr = s.parseWith(expr)
@@ -107,9 +111,9 @@ private object ExpressionLang {
         data class NotInArray(val left: Expr, val right: Expr) : Expr()
         data class ArrayAccess(val left: Expr, val right: Expr) : Expr()
 
-        data class Identifier(val value: String) : Expr()
-        data class FieldAccess(val obj: Expr, val fieldName: Identifier) : Expr()
-        data class FunCall(val obj: Expr, val funName: Identifier, val arg: Expr) : Expr()
+        data class Dot(val left: Expr, val right: Expr) : Expr()
+        data class FieldAccess(val name: String) : Expr()
+        data class FunctionCall(val name: String, val args: List<Expr> = emptyList()) : Expr()
     }
 
     private fun Expr.eval(): Any =
@@ -140,18 +144,25 @@ private object ExpressionLang {
             is Not           -> !(value.eval() as Boolean)
             is IfThenElse    -> if (cond.eval() as Boolean) ifTrue.eval() else ifFalse.eval()
 
-            is Identifier    -> error("Should not be evaluated on its own")
-            is FieldAccess   -> {
-                val obj = obj.eval()
-                val name = fieldName.value
-                // Not using reflection here because it's as slow as all other tests.
-                when {
-                    obj is List<*> && name == "size" -> obj.size
-                    obj is String && name == "size"  -> obj.length
-                    else                             -> error("Unsupported field '$name' on $obj")
+            is Dot           -> {
+                val obj = left.eval()
+                // Not using reflection because it's as slow as all other tests.
+                when (right) {
+                    is FieldAccess  -> when {
+                        obj is List<*> && right.name == "size" -> obj.size
+                        obj is String && right.name == "size"  -> obj.length
+                        else                                   -> error("Unsupported field '${right.name}' on $obj")
+                    }
+                    is FunctionCall -> when {
+                        obj is List<*> && right.name == "reversed"   -> obj.reversed()
+                        obj is String && right.name == "toUpperCase" -> obj.toUpperCase()
+                        else                                         -> error("Unsupported field '${right.name}' on $obj")
+                    }
+                    else            -> error("")
                 }
             }
-            is FunCall       -> TODO()
+            is FieldAccess   -> error("Should not be evaluated on its own")
+            is FunctionCall  -> error("Should not be evaluated on its own")
         }
 }
 
@@ -252,8 +263,20 @@ class ExpressionLangTests {
         evaluate("[0,1,2].size") shouldEqual 3
         evaluate("\"abcde\".size") shouldEqual 5
 
-        parse("1.foo") shouldEqual FieldAccess(IntLiteral(1), Identifier("foo"))
-        parse("1.foo.bar") shouldEqual FieldAccess(FieldAccess(IntLiteral(1), Identifier("foo")), Identifier("bar"))
-        parse("1.foo.bar.woof") shouldEqual FieldAccess(FieldAccess(FieldAccess(IntLiteral(1), Identifier("foo")), Identifier("bar")), Identifier("woof"))
+        parse("1.foo") shouldEqual Dot(IntLiteral(1), FieldAccess("foo"))
+        parse("1.foo.bar") shouldEqual Dot(Dot(IntLiteral(1), FieldAccess("foo")), FieldAccess("bar"))
+        parse("1.foo.bar.buz") shouldEqual Dot(Dot(Dot(IntLiteral(1), FieldAccess("foo")), FieldAccess("bar")), FieldAccess("buz"))
+    }
+
+    @Test fun `function call expressions`() {
+        evaluate("[0,1,2].reversed()") shouldEqual listOf(2, 1, 0)
+        evaluate("[0,1,2].reversed().reversed()") shouldEqual listOf(0, 1, 2)
+        evaluate("\"abcde\".toUpperCase()") shouldEqual "ABCDE"
+
+        parse("1.foo()") shouldEqual Dot(IntLiteral(1), FunctionCall("foo"))
+        parse("1.foo().bar()") shouldEqual Dot(Dot(IntLiteral(1), FunctionCall("foo")), FunctionCall("bar"))
+        parse("1.foo().bar") shouldEqual Dot(Dot(IntLiteral(1), FunctionCall("foo")), FieldAccess("bar"))
+        parse("1.foo.bar()") shouldEqual Dot(Dot(IntLiteral(1), FieldAccess("foo")), FunctionCall("bar"))
+        parse("1.foo.bar().buz()") shouldEqual Dot(Dot(Dot(IntLiteral(1), FieldAccess("foo")), FunctionCall("bar")), FunctionCall("buz"))
     }
 }

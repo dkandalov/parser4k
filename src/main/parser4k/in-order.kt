@@ -14,6 +14,7 @@ fun <T> InOrder<T>.leftAssocAsBinary(transform: (T, T) -> T): Parser<T> =
 fun <T> Parser<*>.skip(): Parser<T> = object : Parser<T> {
     override fun parse(input: Input): Output<T>? {
         val (_, nextInput) = this@skip.parse(input) ?: return null
+        @Suppress("UNCHECKED_CAST")
         return Output(null as T, nextInput)
     }
 }

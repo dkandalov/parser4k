@@ -15,6 +15,11 @@ fun <T> oneOf(parsers: List<Parser<T>>) = object : Parser<T> {
     }
 }
 
+fun <T> oneOfLongest(vararg parsers: Parser<T>): Parser<T> = object : Parser<T> {
+    override fun parse(input: Input) =
+        parsers.mapNotNull { it.parse(input) }.maxBy { it.nextInput.offset }
+}
+
 fun <T> oneOfWithPrecedence(vararg parsers: Parser<T>): Parser<T> = oneOfWithPrecedence(parsers.toList())
 
 fun <T> oneOfWithPrecedence(parsers: List<Parser<T>>) = object : Parser<T> {
