@@ -16,6 +16,7 @@ private class CodeGenerator(private val println: (String) -> Unit) {
         generateSkipLast()
         generateSkipWrapper()
         generateLeftAssoc()
+        generateLists()
     }
 
     private fun generateHeader() {
@@ -83,6 +84,24 @@ private class CodeGenerator(private val println: (String) -> Unit) {
                 fun <$ts> InOrder$n<$ts>.leftAssoc(transform: (List$n<$ts>) -> T1): Parser<T1> =
                     InOrder(listOf($parsers))
                         .leftAssoc { ($its) -> transform(List$n($itsAsTs)) } as Parser<T1>
+            """.trimIndent())
+        }
+        println("")
+    }
+    private fun generateLists() {
+        // For example:
+        // data class List2<T1, T2>(val value1: T1, val value2: T2) {
+        //     operator fun <T3> plus(value3: T3): List3<T1, T2, T3> = List3(value1, value2, value3)
+        // }
+
+        (1..8).forEach { n ->
+            val ts = (1..n).joinToString { "T$it" }
+            val valuesAsTs = (1..n).joinToString { "val value$it: T$it" }
+            val values = (1..n).joinToString { "value$it" }
+            println("""
+                data class List$n<$ts>($valuesAsTs) {
+                    operator fun <T$n> plus(value$n: T$n): List$n<$ts> = List$n($values)
+                }
             """.trimIndent())
         }
         println("")
