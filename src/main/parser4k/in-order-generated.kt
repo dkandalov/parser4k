@@ -48,28 +48,65 @@ fun <T1, T2, T3, T4, T5, T6, T7, T8> InOrder8<T1, T2, T3, T4, T5, T6, T7, T8>.le
     InOrder(listOf(parser1, parser2, parser3, parser4, parser5, parser6, parser7, parser8))
         .leftAssoc { (it1, it2, it3, it4, it5, it6, it7, it8) -> transform(List8(it1 as T1, it2 as T2, it3 as T3, it4 as T4, it5 as T5, it6 as T6, it7 as T7, it8 as T8)) } as Parser<T1>
 
+class InOrder2<T1, T2>(val parser1: Parser<T1>, val parser2: Parser<T2>) : Parser<List2<T1, T2>> {
+    override fun parse(input: Input) = 
+        InOrder(listOf(parser1, parser2)).map { List2(it[0] as T1, it[1] as T2) }.parse(input)
+}
+class InOrder3<T1, T2, T3>(val parser1: Parser<T1>, val parser2: Parser<T2>, val parser3: Parser<T3>) : Parser<List3<T1, T2, T3>> {
+    override fun parse(input: Input) = 
+        InOrder(listOf(parser1, parser2, parser3)).map { List3(it[0] as T1, it[1] as T2, it[2] as T3) }.parse(input)
+}
+class InOrder4<T1, T2, T3, T4>(val parser1: Parser<T1>, val parser2: Parser<T2>, val parser3: Parser<T3>, val parser4: Parser<T4>) : Parser<List4<T1, T2, T3, T4>> {
+    override fun parse(input: Input) = 
+        InOrder(listOf(parser1, parser2, parser3, parser4)).map { List4(it[0] as T1, it[1] as T2, it[2] as T3, it[3] as T4) }.parse(input)
+}
+class InOrder5<T1, T2, T3, T4, T5>(val parser1: Parser<T1>, val parser2: Parser<T2>, val parser3: Parser<T3>, val parser4: Parser<T4>, val parser5: Parser<T5>) : Parser<List5<T1, T2, T3, T4, T5>> {
+    override fun parse(input: Input) = 
+        InOrder(listOf(parser1, parser2, parser3, parser4, parser5)).map { List5(it[0] as T1, it[1] as T2, it[2] as T3, it[3] as T4, it[4] as T5) }.parse(input)
+}
+class InOrder6<T1, T2, T3, T4, T5, T6>(val parser1: Parser<T1>, val parser2: Parser<T2>, val parser3: Parser<T3>, val parser4: Parser<T4>, val parser5: Parser<T5>, val parser6: Parser<T6>) : Parser<List6<T1, T2, T3, T4, T5, T6>> {
+    override fun parse(input: Input) = 
+        InOrder(listOf(parser1, parser2, parser3, parser4, parser5, parser6)).map { List6(it[0] as T1, it[1] as T2, it[2] as T3, it[3] as T4, it[4] as T5, it[5] as T6) }.parse(input)
+}
+class InOrder7<T1, T2, T3, T4, T5, T6, T7>(val parser1: Parser<T1>, val parser2: Parser<T2>, val parser3: Parser<T3>, val parser4: Parser<T4>, val parser5: Parser<T5>, val parser6: Parser<T6>, val parser7: Parser<T7>) : Parser<List7<T1, T2, T3, T4, T5, T6, T7>> {
+    override fun parse(input: Input) = 
+        InOrder(listOf(parser1, parser2, parser3, parser4, parser5, parser6, parser7)).map { List7(it[0] as T1, it[1] as T2, it[2] as T3, it[3] as T4, it[4] as T5, it[5] as T6, it[6] as T7) }.parse(input)
+}
+class InOrder8<T1, T2, T3, T4, T5, T6, T7, T8>(val parser1: Parser<T1>, val parser2: Parser<T2>, val parser3: Parser<T3>, val parser4: Parser<T4>, val parser5: Parser<T5>, val parser6: Parser<T6>, val parser7: Parser<T7>, val parser8: Parser<T8>) : Parser<List8<T1, T2, T3, T4, T5, T6, T7, T8>> {
+    override fun parse(input: Input) = 
+        InOrder(listOf(parser1, parser2, parser3, parser4, parser5, parser6, parser7, parser8)).map { List8(it[0] as T1, it[1] as T2, it[2] as T3, it[3] as T4, it[4] as T5, it[5] as T6, it[6] as T7, it[7] as T8) }.parse(input)
+}
+
 data class List1<T1>(val value1: T1) {
-    operator fun <T1> plus(value1: T1): List1<T1> = List1(value1)
+    operator fun <T1> plus(value1: T1): List1<T1> = 
+        List1(value1)
 }
 data class List2<T1, T2>(val value1: T1, val value2: T2) {
-    operator fun <T2> plus(value2: T2): List2<T1, T2> = List2(value1, value2)
+    operator fun <T2> plus(value2: T2): List2<T1, T2> = 
+        List2(value1, value2)
 }
 data class List3<T1, T2, T3>(val value1: T1, val value2: T2, val value3: T3) {
-    operator fun <T3> plus(value3: T3): List3<T1, T2, T3> = List3(value1, value2, value3)
+    operator fun <T3> plus(value3: T3): List3<T1, T2, T3> = 
+        List3(value1, value2, value3)
 }
 data class List4<T1, T2, T3, T4>(val value1: T1, val value2: T2, val value3: T3, val value4: T4) {
-    operator fun <T4> plus(value4: T4): List4<T1, T2, T3, T4> = List4(value1, value2, value3, value4)
+    operator fun <T4> plus(value4: T4): List4<T1, T2, T3, T4> = 
+        List4(value1, value2, value3, value4)
 }
 data class List5<T1, T2, T3, T4, T5>(val value1: T1, val value2: T2, val value3: T3, val value4: T4, val value5: T5) {
-    operator fun <T5> plus(value5: T5): List5<T1, T2, T3, T4, T5> = List5(value1, value2, value3, value4, value5)
+    operator fun <T5> plus(value5: T5): List5<T1, T2, T3, T4, T5> = 
+        List5(value1, value2, value3, value4, value5)
 }
 data class List6<T1, T2, T3, T4, T5, T6>(val value1: T1, val value2: T2, val value3: T3, val value4: T4, val value5: T5, val value6: T6) {
-    operator fun <T6> plus(value6: T6): List6<T1, T2, T3, T4, T5, T6> = List6(value1, value2, value3, value4, value5, value6)
+    operator fun <T6> plus(value6: T6): List6<T1, T2, T3, T4, T5, T6> = 
+        List6(value1, value2, value3, value4, value5, value6)
 }
 data class List7<T1, T2, T3, T4, T5, T6, T7>(val value1: T1, val value2: T2, val value3: T3, val value4: T4, val value5: T5, val value6: T6, val value7: T7) {
-    operator fun <T7> plus(value7: T7): List7<T1, T2, T3, T4, T5, T6, T7> = List7(value1, value2, value3, value4, value5, value6, value7)
+    operator fun <T7> plus(value7: T7): List7<T1, T2, T3, T4, T5, T6, T7> = 
+        List7(value1, value2, value3, value4, value5, value6, value7)
 }
 data class List8<T1, T2, T3, T4, T5, T6, T7, T8>(val value1: T1, val value2: T2, val value3: T3, val value4: T4, val value5: T5, val value6: T6, val value7: T7, val value8: T8) {
-    operator fun <T8> plus(value8: T8): List8<T1, T2, T3, T4, T5, T6, T7, T8> = List8(value1, value2, value3, value4, value5, value6, value7, value8)
+    operator fun <T8> plus(value8: T8): List8<T1, T2, T3, T4, T5, T6, T7, T8> = 
+        List8(value1, value2, value3, value4, value5, value6, value7, value8)
 }
 

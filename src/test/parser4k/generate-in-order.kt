@@ -16,6 +16,7 @@ private class CodeGenerator(private val println: (String) -> Unit) {
         generateSkipLast()
         generateSkipWrapper()
         generateLeftAssoc()
+        generateInOrderParsers()
         generateLists()
     }
 
@@ -88,10 +89,34 @@ private class CodeGenerator(private val println: (String) -> Unit) {
         }
         println("")
     }
+
+    private fun generateInOrderParsers() {
+        // For example:
+        // class InOrder2<T1, T2>(val parser1: Parser<T1>, val parser2: Parser<T2>) : Parser<List2<T1, T2>> {
+        //     override fun parse(input: Input) =
+        //         InOrder(listOf(parser1, parser2)).map { List2(it[0] as T1, it[1] as T2) }.parse(input)
+        // }
+
+        (2..8).forEach { n ->
+            val ts = (1..n).joinToString { "T$it" }
+            val parserVals = (1..n).joinToString { "val parser$it: Parser<T$it>" }
+            val parsers = (1..n).joinToString { "parser$it" }
+            val itAsTs = (1..n).joinToString { "it[${it - 1}] as T$it" }
+            println("""
+                class InOrder$n<$ts>($parserVals) : Parser<List$n<$ts>> {
+                    override fun parse(input: Input) = 
+                        InOrder(listOf($parsers)).map { List$n($itAsTs) }.parse(input)
+                }
+            """.trimIndent())
+        }
+        println("")
+    }
+
     private fun generateLists() {
         // For example:
         // data class List2<T1, T2>(val value1: T1, val value2: T2) {
-        //     operator fun <T3> plus(value3: T3): List3<T1, T2, T3> = List3(value1, value2, value3)
+        //     operator fun <T3> plus(value3: T3): List3<T1, T2, T3> =
+        //      List3(value1, value2, value3)
         // }
 
         (1..8).forEach { n ->
@@ -100,7 +125,8 @@ private class CodeGenerator(private val println: (String) -> Unit) {
             val values = (1..n).joinToString { "value$it" }
             println("""
                 data class List$n<$ts>($valuesAsTs) {
-                    operator fun <T$n> plus(value$n: T$n): List$n<$ts> = List$n($values)
+                    operator fun <T$n> plus(value$n: T$n): List$n<$ts> = 
+                        List$n($values)
                 }
             """.trimIndent())
         }
