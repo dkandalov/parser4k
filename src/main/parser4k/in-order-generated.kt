@@ -1,3 +1,5 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package parser4k
 
 /////////////////////////////////////////////////
@@ -26,4 +28,23 @@ fun <T2, T3, T4> InOrder5<*, T2, T3, T4, *>.skipWrapper() = map { (_, it2, it3, 
 fun <T2, T3, T4, T5> InOrder6<*, T2, T3, T4, T5, *>.skipWrapper() = map { (_, it2, it3, it4, it5, _) -> List4(it2, it3, it4, it5) }
 fun <T2, T3, T4, T5, T6> InOrder7<*, T2, T3, T4, T5, T6, *>.skipWrapper() = map { (_, it2, it3, it4, it5, it6, _) -> List5(it2, it3, it4, it5, it6) }
 fun <T2, T3, T4, T5, T6, T7> InOrder8<*, T2, T3, T4, T5, T6, T7, *>.skipWrapper() = map { (_, it2, it3, it4, it5, it6, it7, _) -> List6(it2, it3, it4, it5, it6, it7) }
+
+fun <T1, T2, T3> InOrder3<T1, T2, T3>.leftAssoc(transform: (List3<T1, T2, T3>) -> T1) =
+    InOrder(listOf(parser1, parser2, parser3))
+        .leftAssoc { (it1, it2, it3) -> transform(List3(it1 as T1, it2 as T2, it3 as T3)) } as Parser<T1>
+fun <T1, T2, T3, T4> InOrder4<T1, T2, T3, T4>.leftAssoc(transform: (List4<T1, T2, T3, T4>) -> T1) =
+    InOrder(listOf(parser1, parser2, parser3, parser4))
+        .leftAssoc { (it1, it2, it3, it4) -> transform(List4(it1 as T1, it2 as T2, it3 as T3, it4 as T4)) } as Parser<T1>
+fun <T1, T2, T3, T4, T5> InOrder5<T1, T2, T3, T4, T5>.leftAssoc(transform: (List5<T1, T2, T3, T4, T5>) -> T1) =
+    InOrder(listOf(parser1, parser2, parser3, parser4, parser5))
+        .leftAssoc { (it1, it2, it3, it4, it5) -> transform(List5(it1 as T1, it2 as T2, it3 as T3, it4 as T4, it5 as T5)) } as Parser<T1>
+fun <T1, T2, T3, T4, T5, T6> InOrder6<T1, T2, T3, T4, T5, T6>.leftAssoc(transform: (List6<T1, T2, T3, T4, T5, T6>) -> T1) =
+    InOrder(listOf(parser1, parser2, parser3, parser4, parser5, parser6))
+        .leftAssoc { (it1, it2, it3, it4, it5, it6) -> transform(List6(it1 as T1, it2 as T2, it3 as T3, it4 as T4, it5 as T5, it6 as T6)) } as Parser<T1>
+fun <T1, T2, T3, T4, T5, T6, T7> InOrder7<T1, T2, T3, T4, T5, T6, T7>.leftAssoc(transform: (List7<T1, T2, T3, T4, T5, T6, T7>) -> T1) =
+    InOrder(listOf(parser1, parser2, parser3, parser4, parser5, parser6, parser7))
+        .leftAssoc { (it1, it2, it3, it4, it5, it6, it7) -> transform(List7(it1 as T1, it2 as T2, it3 as T3, it4 as T4, it5 as T5, it6 as T6, it7 as T7)) } as Parser<T1>
+fun <T1, T2, T3, T4, T5, T6, T7, T8> InOrder8<T1, T2, T3, T4, T5, T6, T7, T8>.leftAssoc(transform: (List8<T1, T2, T3, T4, T5, T6, T7, T8>) -> T1) =
+    InOrder(listOf(parser1, parser2, parser3, parser4, parser5, parser6, parser7, parser8))
+        .leftAssoc { (it1, it2, it3, it4, it5, it6, it7, it8) -> transform(List8(it1 as T1, it2 as T2, it3 as T3, it4 as T4, it5 as T5, it6 as T6, it7 as T7, it8 as T8)) } as Parser<T1>
 

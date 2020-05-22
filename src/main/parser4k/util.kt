@@ -18,3 +18,7 @@ class InputIsNotConsumed(override val message: String) : ParsingError(message) {
         "payload = ${output.payload}"
     )
 }
+
+operator fun <T> List<T>.component6(): T = this[5]
+operator fun <T> List<T>.component7(): T = this[6]
+operator fun <T> List<T>.component8(): T = this[7]

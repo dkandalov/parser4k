@@ -15,14 +15,6 @@ fun <T> Parser<*>.skip(): Parser<T> = object : Parser<T> {
     }
 }
 
-fun <T1, T2, T3> InOrder3<T1, T2, T3>.leftAssoc(transform: (List3<T1, T2, T3>) -> T1) =
-    InOrder(listOf(parser1, parser2, parser3))
-        .leftAssoc { (it1, it2, it3) -> transform(List3(it1 as T1, it2 as T2, it3 as T3)) } as Parser<T1>
-
-fun <T1, T2, T3, T4> InOrder4<T1, T2, T3, T4>.leftAssoc(transform: (List4<T1, T2, T3, T4>) -> T1) =
-    InOrder(listOf(parser1, parser2, parser3, parser4))
-        .leftAssoc { (it1, it2, it3, it4) -> transform(List4(it1 as T1, it2 as T2, it3 as T3, it4 as T4)) } as Parser<T1>
-
 fun <T> InOrder<T>.leftAssoc(transform: (List<T>) -> T) =
     object : Parser<T> {
         override fun parse(input: Input): Output<T>? {
