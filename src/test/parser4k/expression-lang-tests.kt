@@ -41,7 +41,7 @@ private object ExpressionLang {
     private val inArray = binaryExpr("in", ::InArray)
     private val notInArray = binaryExpr("not in", ::NotInArray)
     private val arrayAccess = inOrder(ref { expr }, token("["), ref { expr }, token("]"))
-        .leftAssoc{ (left, _, right) -> ArrayAccess(left, right) }.with(cache)
+        .leftAssoc { (left, _, right) -> ArrayAccess(left, right) }.with(cache)
 
     private val and = binaryExpr("and", ::And)
     private val or = binaryExpr("or", ::Or)
