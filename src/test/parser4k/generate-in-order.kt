@@ -17,6 +17,7 @@ private class CodeGenerator(private val println: (String) -> Unit) {
         generateSkipWrapper()
         generateLeftAssoc()
         generateInOrderParsers()
+        generateInOrderFunctions()
         generateLists()
     }
 
@@ -107,6 +108,23 @@ private class CodeGenerator(private val println: (String) -> Unit) {
                     override fun parse(input: Input) = 
                         InOrder(listOf($parsers)).map { List$n($itAsTs) }.parse(input)
                 }
+            """.trimIndent())
+        }
+        println("")
+    }
+
+    private fun generateInOrderFunctions() {
+        // For example:
+        // fun <T1, T2> inOrder(parser1: Parser<T1>, parser2: Parser<T2>): InOrder2<T1, T2> =
+        //     InOrder2(parser1, parser2)
+
+        (2..8).forEach { n ->
+            val ts = (1..n).joinToString { "T$it" }
+            val parserVals = (1..n).joinToString { "parser$it: Parser<T$it>" }
+            val parsers = (1..n).joinToString { "parser$it" }
+            println("""
+                fun <$ts> inOrder($parserVals): InOrder$n<$ts> =
+                    InOrder$n($parsers)
             """.trimIndent())
         }
         println("")

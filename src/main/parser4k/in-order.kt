@@ -61,24 +61,3 @@ class InOrder<T>(val parsers: List<Parser<T>>) : Parser<List<T>> {
 fun <T> inOrder(parsers: List<Parser<T>>) = InOrder(parsers)
 
 fun <T> inOrder(vararg parsers: Parser<T>) = inOrder(parsers.toList())
-
-fun <T1, T2> inOrder(parser1: Parser<T1>, parser2: Parser<T2>) =
-    InOrder2(parser1, parser2)
-
-fun <T1, T2, T3> inOrder(parser1: Parser<T1>, parser2: Parser<T2>, parser3: Parser<T3>) =
-    InOrder3(parser1, parser2, parser3)
-
-fun <T1, T2, T3, T4> inOrder(parser1: Parser<T1>, parser2: Parser<T2>, parser3: Parser<T3>, parser4: Parser<T4>) =
-    InOrder4(parser1, parser2, parser3, parser4)
-
-fun <T1, T2, T3, T4, T5> inOrder(parser1: Parser<T1>, parser2: Parser<T2>, parser3: Parser<T3>, parser4: Parser<T4>, parser5: Parser<T5>) =
-    InOrder5(parser1, parser2, parser3, parser4, parser5)
-
-fun <T1, T2, T3, T4, T5, T6> inOrder(parser1: Parser<T1>, parser2: Parser<T2>, parser3: Parser<T3>, parser4: Parser<T4>, parser5: Parser<T5>, parser6: Parser<T6>) =
-    InOrder6(parser1, parser2, parser3, parser4, parser5, parser6)
-
-fun <T1, T2, T3, T4, T5, T6, T7> inOrder(parser1: Parser<T1>, parser2: Parser<T2>, parser3: Parser<T3>, parser4: Parser<T4>, parser5: Parser<T5>, parser6: Parser<T6>, parser7: Parser<T7>) =
-    InOrder7(parser1, parser2, parser3, parser4, parser5, parser6, parser7)
-
-fun <T1, T2, T3, T4, T5, T6, T7, T8> inOrder(parser1: Parser<T1>, parser2: Parser<T2>, parser3: Parser<T3>, parser4: Parser<T4>, parser5: Parser<T5>, parser6: Parser<T6>, parser7: Parser<T7>, parser8: Parser<T8>) =
-    InOrder8(parser1, parser2, parser3, parser4, parser5, parser6, parser7, parser8)
