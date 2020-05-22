@@ -94,7 +94,7 @@ private class CodeGenerator(private val println: (String) -> Unit) {
     private fun generateInOrderParsers() {
         // For example:
         // class InOrder2<T1, T2>(val parser1: Parser<T1>, val parser2: Parser<T2>) : Parser<List2<T1, T2>> {
-        //     override fun parse(input: Input) =
+        //     override fun parse(input: Input): Output<List2<T1, T2>>? =
         //         InOrder(listOf(parser1, parser2)).map { List2(it[0] as T1, it[1] as T2) }.parse(input)
         // }
 
@@ -105,7 +105,7 @@ private class CodeGenerator(private val println: (String) -> Unit) {
             val itAsTs = (1..n).joinToString { "it[${it - 1}] as T$it" }
             println("""
                 class InOrder$n<$ts>($parserVals) : Parser<List$n<$ts>> {
-                    override fun parse(input: Input) = 
+                    override fun parse(input: Input): Output<List$n<$ts>>? = 
                         InOrder(listOf($parsers)).map { List$n($itAsTs) }.parse(input)
                 }
             """.trimIndent())
