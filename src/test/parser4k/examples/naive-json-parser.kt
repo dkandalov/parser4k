@@ -1,6 +1,7 @@
-package parser4k
+package parser4k.examples
 
-import parser4k.NaiveJsonParser.parse
+import parser4k.*
+import parser4k.examples.NaiveJsonParser.parse
 import parser4k.commonparsers.Tokens
 import parser4k.commonparsers.joinedWith
 import parser4k.commonparsers.token
