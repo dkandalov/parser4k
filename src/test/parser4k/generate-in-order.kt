@@ -142,12 +142,8 @@ private class CodeGenerator(private val println: (String) -> Unit) {
         (1..maxN).forEach { n ->
             val ts = (1..n).joinToString { "T$it" }
             val valuesAsTs = (1..n).joinToString { "val value$it: T$it" }
-            val values = (1..n).joinToString { "value$it" }
             println("""
-                data class List$n<$ts>($valuesAsTs) {
-                    operator fun <T$n> plus(value$n: T$n): List$n<$ts> = 
-                        List$n($values)
-                }
+                data class List$n<$ts>($valuesAsTs)
             """.trimIndent())
         }
         println("")
