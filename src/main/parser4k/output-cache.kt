@@ -29,15 +29,15 @@ fun <T> Parser<T>.reset(outputCache: OutputCache<T>) = object : Parser<T> {
 }
 
 class OutputCache<T> {
-    private val outputCache = HashMap<Pair<Parser<T>, Int>, Output<T>?>()
+    private val map = HashMap<Pair<Parser<T>, Int>, Output<T>?>()
 
-    fun contains(key: Pair<Parser<T>, Int>) = outputCache.containsKey(key)
+    fun contains(key: Pair<Parser<T>, Int>) = map.containsKey(key)
 
-    operator fun get(key: Pair<Parser<T>, Int>) = outputCache[key]
+    operator fun get(key: Pair<Parser<T>, Int>) = map[key]
 
     operator fun set(key: Pair<Parser<T>, Int>, output: Output<T>?) {
-        outputCache[key] = output
+        map[key] = output
     }
 
-    fun clear() = outputCache.clear()
+    fun clear() = map.clear()
 }

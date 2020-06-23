@@ -12,7 +12,7 @@ It aims to be:
  - **easy to use** - you can quickly figure out how to write a parser for a small language
  - **production-ready** - not a toy project, good-enough performance to be embedded into real applications
 
-Using as Gradle dependency:
+You can get Parser4k from bintray, e.g. in Gradle:
 ```
 repositories {
     maven { setUrl("https://dl.bintray.com/dkandalov/maven") }
