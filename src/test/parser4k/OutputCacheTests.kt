@@ -31,8 +31,8 @@ class OutputCacheTests {
             "123" plus:0 minus:0
             "123" plus:0 minus:0 int:0
             "123" plus:0 minus:0 int:0 -- 123
-            "123" plus:0 minus:0 -- X
-            "123" plus:0 -- X
+            "123" plus:0 minus:0 -- no match
+            "123" plus:0 -- no match
         """.trimIndent()
     }
 
