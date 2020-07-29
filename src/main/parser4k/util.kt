@@ -1,5 +1,17 @@
 package parser4k
 
+fun <T1, T3, R> ((T1, T3) -> R).asBinary() = { list: List3<T1, *, T3> ->
+    this(list.value1, list.value3)
+}
+
+fun <T> Parser<*>.skip(): Parser<T> = object : Parser<T> {
+    override fun parse(input: Input): Output<T>? {
+        val (_, nextInput) = this@skip.parse(input) ?: return null
+        @Suppress("UNCHECKED_CAST")
+        return Output(null as T, nextInput)
+    }
+}
+
 fun <T> String.parseWith(parser: Parser<T>): T {
     val output = parser.parse(Input(this)) ?: throw NoMatchingParsers(this)
     if (output.nextInput.offset < output.nextInput.value.length) throw InputIsNotConsumed(output)

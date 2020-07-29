@@ -1,6 +1,5 @@
 package parser4k
 
-import parser4k.commonparsers.token
 import kotlin.test.Test
 
 class LeftAssociativityTests {
@@ -300,8 +299,8 @@ class RightAssociativityTests {
 }
 
 class LeftAndRightAssociativityTests : TestGrammar() {
-    private val plus = inOrder(nonRecRef { expr }, token("+"), ref { expr }).mapLeftAssoc(::Plus.asBinary())
-    private val power = inOrder(nonRecRef { expr }, token("^"), ref { expr }).map(::Power.asBinary())
+    private val plus = inOrder(nonRecRef { expr }, str(" + "), ref { expr }).mapLeftAssoc(::Plus.asBinary())
+    private val power = inOrder(nonRecRef { expr }, str(" ^ "), ref { expr }).map(::Power.asBinary())
     override val expr: Parser<ASTNode> = oneOfWithPrecedence(
         plus,
         power,

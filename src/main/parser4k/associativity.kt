@@ -1,7 +1,6 @@
-@file:Suppress("UNCHECKED_CAST")
-
 package parser4k
 
+@Suppress("UNCHECKED_CAST")
 fun <T> InOrder<T>.mapLeftAssoc(transform: (List<T>) -> T) = object : Parser<T> {
     private val leftParser = nonRec(parsers.first())
     private val midParsers = parsers.drop(1).dropLast(1)
