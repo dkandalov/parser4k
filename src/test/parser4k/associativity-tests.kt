@@ -151,6 +151,33 @@ class LeftAssociativityTests {
             "1 + 2 || 3 + 4" shouldBeParsedAs "((1 + 2) || (3 + 4))"
             "1 || 2 + 3 || 4" shouldBeParsedAs "((1 || (2 + 3)) || 4)"
         }
+
+    @Test fun `nested operator precedence`() =
+        object : TestGrammar() {
+            val plus = inOrder(ref { expr }, str(" + "), ref { expr }).mapLeftAssoc(::Plus.asBinary())
+            val paren = inOrder(str("("), ref { expr }, str(")")).map { (_, it, _) -> it }
+            override val expr: Parser<Node> = oneOfWithPrecedence(
+                plus,
+                paren.nestedPrecedence(),
+                number
+            )
+        }.run {
+            "1" shouldBeParsedAs "1"
+
+            "1 + 2" shouldBeParsedAs "(1 + 2)"
+            "1 + 2 + 3" shouldBeParsedAs "((1 + 2) + 3)"
+
+            "(1)" shouldBeParsedAs "1"
+            "((1))" shouldBeParsedAs "1"
+            "(1) + (2)" shouldBeParsedAs "(1 + 2)"
+
+            "(1 + 2) + 3" shouldBeParsedAs "((1 + 2) + 3)"
+            "1 + (2 + 3)" shouldBeParsedAs "(1 + (2 + 3))"
+
+            "(1 + 2) + 3 + 4" shouldBeParsedAs "(((1 + 2) + 3) + 4)"
+            "1 + (2 + 3) + 4" shouldBeParsedAs "((1 + (2 + 3)) + 4)"
+            "1 + 2 + (3 + 4)" shouldBeParsedAs "((1 + 2) + (3 + 4))"
+        }
 }
 
 class RightAssociativityTests {
@@ -248,6 +275,33 @@ class RightAssociativityTests {
             "1 ^ 2 && 3 ^ 4" shouldBeParsedAs "((1 ^ 2) && (3 ^ 4))"
             "1 && 2 ^ 3 && 4" shouldBeParsedAs "(1 && ((2 ^ 3) && 4))"
         }
+
+    @Test fun `nested operator precedence`() =
+        object : TestGrammar() {
+            val power = inOrder(nonRecRef { expr }, str(" ^ "), ref { expr }).map(::Power.asBinary())
+            val paren = inOrder(str("("), ref { expr }, str(")")).map { (_, it, _) -> it }
+            override val expr: Parser<Node> = oneOfWithPrecedence(
+                power,
+                paren.nestedPrecedence(),
+                number
+            )
+        }.run {
+            "1" shouldBeParsedAs "1"
+
+            "1 ^ 2" shouldBeParsedAs "(1 ^ 2)"
+            "1 ^ 2 ^ 3" shouldBeParsedAs "(1 ^ (2 ^ 3))"
+
+            "(1)" shouldBeParsedAs "1"
+            "((1))" shouldBeParsedAs "1"
+            "(1) ^ (2)" shouldBeParsedAs "(1 ^ 2)"
+
+            "(1 ^ 2) ^ 3" shouldBeParsedAs "((1 ^ 2) ^ 3)"
+            "1 ^ (2 ^ 3)" shouldBeParsedAs "(1 ^ (2 ^ 3))"
+
+            "(1 ^ 2) ^ 3 ^ 4" shouldBeParsedAs "((1 ^ 2) ^ (3 ^ 4))"
+            "1 ^ (2 ^ 3) ^ 4" shouldBeParsedAs "(1 ^ ((2 ^ 3) ^ 4))"
+            "1 ^ 2 ^ (3 ^ 4)" shouldBeParsedAs "(1 ^ (2 ^ (3 ^ 4)))"
+        }
 }
 
 class LeftAndRightAssociativityTests : TestGrammar() {
@@ -264,11 +318,9 @@ class LeftAndRightAssociativityTests : TestGrammar() {
 
         "1 + 2" shouldBeParsedAs "(1 + 2)"
         "1 + 2 + 3" shouldBeParsedAs "((1 + 2) + 3)"
-        "1 + 2 + 3 + 4" shouldBeParsedAs "(((1 + 2) + 3) + 4)"
 
         "1 ^ 2" shouldBeParsedAs "(1 ^ 2)"
         "1 ^ 2 ^ 3" shouldBeParsedAs "(1 ^ (2 ^ 3))"
-        "1 ^ 2 ^ 3 ^ 4" shouldBeParsedAs "(1 ^ (2 ^ (3 ^ 4)))"
 
         "1^2 + 3" shouldBeParsedAs "((1 ^ 2) + 3)"
         "1 + 2^3" shouldBeParsedAs "(1 + (2 ^ 3))"
@@ -304,7 +356,6 @@ class ParserAssociativityAndNestedPrecedenceTests : TestGrammar() {
         "123" shouldBeParsedAs "123"
         "1 + 2" shouldBeParsedAs "(1 + 2)"
         "1 + 2 + 3" shouldBeParsedAs "((1 + 2) + 3)"
-        "1 + 2 + 3 + 4" shouldBeParsedAs "(((1 + 2) + 3) + 4)"
 
         "123[0]" shouldBeParsedAs "123[0]"
         "123[0][1]" shouldBeParsedAs "123[0][1]"
