@@ -10,46 +10,8 @@ import java.math.BigDecimal
 import kotlin.test.Test
 
 
-private val number = regex("\\d+").map { Number(it.toBigDecimal()) }
-
-class NoneRecursiveParserTests {
-    private val expression = inOrder(number, repeat(inOrder(oneOf(token("+"), token("-")), number)))
-        .map { (first, rest) ->
-            rest.fold(first as Expression) { left, (operator, right) ->
-                when (operator) {
-                    "+"  -> Plus(left, right)
-                    "-"  -> Minus(left, right)
-                    else -> error("")
-                }
-            }
-        }
-
-    @Test fun `it works`() {
-        "123" shouldParseTo "123"
-        "1 + 2" shouldParseTo "(1 + 2)"
-        "1 - 2" shouldParseTo "(1 - 2)"
-        "1 + 2 + 3" shouldParseTo "((1 + 2) + 3)"
-        "1 + 2 - 3" shouldParseTo "((1 + 2) - 3)"
-    }
-
-    private infix fun String.shouldParseTo(expected: String) = parseWith(expression).toExpressionString() shouldEqual expected
-}
-
-class RecursiveParserTests {
-    private val power = inOrder(nonRecRef { expr }, token("^"), ref { expr }).map(::Power.asBinary())
-    private val expr: Parser<Expression> = oneOf(power, number)
-
-    @Test fun `it works`() {
-        "123" shouldParseAs "123"
-        "1 ^ 2" shouldParseAs "(1 ^ 2)"
-        "1 ^ 2 ^ 3" shouldParseAs "(1 ^ (2 ^ 3))"
-        "1 ^ 2 ^ 3 ^ 4" shouldParseAs "(1 ^ (2 ^ (3 ^ 4)))"
-    }
-
-    private infix fun String.shouldParseAs(expected: String) = parseWith(expr).toExpressionString() shouldEqual expected
-}
-
 class ParserPrecedenceTests {
+    private val number = regex("\\d+").map { Number(it.toBigDecimal()) }
     private val paren = inOrder(token("("), ref { expr }, token(")")).map { (_, it, _) -> it }
     private val multiply = inOrder(nonRecRef { expr }, token("*"), ref { expr }).map(::Multiply.asBinary())
     private val plus = inOrder(nonRecRef { expr }, token("+"), ref { expr }).map(::Plus.asBinary())
