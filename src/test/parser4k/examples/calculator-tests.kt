@@ -4,8 +4,8 @@ package parser4k.calculatortests
 
 import parser4k.*
 import parser4k.commonparsers.token
-import parser4k.Expression.*
-import parser4k.Expression.Number
+import parser4k.calculatortests.Calculator.Expression.*
+import parser4k.calculatortests.Calculator.Expression.Number
 import java.math.BigDecimal
 import kotlin.test.Test
 
@@ -40,6 +40,15 @@ private object Calculator {
             is Divide   -> left.evaluate().divide(right.evaluate())
             is Power    -> left.evaluate().pow(right.evaluate().toInt())
         }
+
+    private sealed class Expression {
+        data class Number(val value: BigDecimal) : Expression()
+        data class Plus(val left: Expression, val right: Expression) : Expression()
+        data class Minus(val left: Expression, val right: Expression) : Expression()
+        data class Multiply(val left: Expression, val right: Expression) : Expression()
+        data class Divide(val left: Expression, val right: Expression) : Expression()
+        data class Power(val left: Expression, val right: Expression) : Expression()
+    }
 }
 
 private object MinimalCalculator {
@@ -86,7 +95,7 @@ class CalculatorTests {
 
     @Test fun `invalid input`() {
         { Calculator.evaluate("+1") } shouldFailWith { it is NoMatchingParsers }
-        { Calculator.evaluate("()") } shouldFailWith  { it is NoMatchingParsers }
+        { Calculator.evaluate("()") } shouldFailWith { it is NoMatchingParsers }
 
         { Calculator.evaluate("(1))") } shouldFailWithMessage """
             |
