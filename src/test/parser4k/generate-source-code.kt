@@ -116,8 +116,8 @@ private fun Generator.generateInOrderParsers() {
         val itAsTs = (1..n).joinToString { "it[${it - 1}] as T$it" }
         println("""
                 class InOrder$n<$ts>($parserVals) : Parser<List$n<$ts>> {
-                    override fun parse(input: Input): Output<List$n<$ts>>? = 
-                        InOrder(listOf($parsers)).map { List$n($itAsTs) }.parse(input)
+                    private val parser = InOrder(listOf($parsers)).map { List$n($itAsTs) }
+                    override fun parse(input: Input): Output<List$n<$ts>>? = parser.parse(input)
                 }
             """.trimIndent())
     }
