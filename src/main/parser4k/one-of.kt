@@ -38,7 +38,7 @@ fun <T> oneOfWithPrecedence(parsers: List<Parser<T>>) = object : Parser<T> {
             val parserIndex = parsers.indexOf(parser)
             val output =
                 if (prevParserIndex < parserIndex || (isNestedPrecedence && prevParser != parser)) {
-                    parser.parseHidingInject(input.copy(leftPayload = null))
+                    parser.parse(input.copy(leftPayload = null))
                 } else {
                     parser.parse(input)
                 }
