@@ -7,7 +7,7 @@ abstract class TestGrammar {
     val number = regex("\\d+").map(::Number)
     abstract val expr: Parser<Node>
 
-    infix fun String.shouldParseAs(expected: String) = parseWith(expr).toString() shouldEqual expected
+    infix fun String.shouldBeParsedAs(expected: String) = parseWith(expr).toString() shouldEqual expected
 
     interface Node
 
@@ -36,21 +36,8 @@ abstract class TestGrammar {
     }
 }
 
-class SingleUnaryOperatorTests {
-    @Test fun `right associativity`() =
-        object : TestGrammar() {
-            val not = inOrder(str("!"), ref { expr }).map { (_, it) -> Not(it) }
-            override val expr: Parser<Node> = oneOf(
-                not,
-                number
-            )
-        }.run {
-            "123" shouldParseAs "123"
-            "!123" shouldParseAs "!(123)"
-            "!!123" shouldParseAs "!(!(123))"
-        }
-
-    @Test fun `left associativity`() =
+class LeftAssociativityTests {
+    @Test fun `single unary operator`() =
         object : TestGrammar() {
             val foo = inOrder(ref { expr }, str(".foo")).mapLeftAssoc { (expr, _) -> Field(expr, "foo") }
             override val expr: Parser<Node> = oneOf(
@@ -58,27 +45,34 @@ class SingleUnaryOperatorTests {
                 number
             )
         }.run {
-            "1" shouldParseAs "1"
-            "1.foo" shouldParseAs "(1.foo)"
-            "1.foo.foo" shouldParseAs "((1.foo).foo)"
+            "1" shouldBeParsedAs "1"
+            "1.foo" shouldBeParsedAs "(1.foo)"
+            "1.foo.foo" shouldBeParsedAs "((1.foo).foo)"
         }
-}
 
-class SingleBinaryOperatorTests {
-    @Test fun `right associativity`() =
+    @Test fun `two unary operators`() =
         object : TestGrammar() {
-            val power = inOrder(nonRecRef { expr }, str(" ^ "), ref { expr }).map(::Power.asBinary())
+            val foo = inOrder(ref { expr }, str(".foo")).mapLeftAssoc { (expr, _) -> Field(expr, "foo") }
+            val bar = inOrder(ref { expr }, str(".bar")).mapLeftAssoc { (expr, _) -> Field(expr, "bar") }
             override val expr: Parser<Node> = oneOf(
-                power,
+                foo,
+                bar,
                 number
             )
         }.run {
-            "1" shouldParseAs "1"
-            "1 ^ 2" shouldParseAs "(1 ^ 2)"
-            "1 ^ 2 ^ 3" shouldParseAs "(1 ^ (2 ^ 3))"
+            "1" shouldBeParsedAs "1"
+
+            "1.foo" shouldBeParsedAs "(1.foo)"
+            "1.foo.foo" shouldBeParsedAs "((1.foo).foo)"
+
+            "1.bar" shouldBeParsedAs "(1.bar)"
+            "1.bar.bar" shouldBeParsedAs "((1.bar).bar)"
+
+            "1.foo.bar" shouldBeParsedAs "((1.foo).bar)"
+            "1.bar.foo" shouldBeParsedAs "((1.bar).foo)"
         }
 
-    @Test fun `left associativity`() =
+    @Test fun `single binary operator`() =
         object : TestGrammar() {
             val plus = inOrder(ref { expr }, str(" + "), ref { expr }).mapLeftAssoc(::Plus.asBinary())
             override val expr: Parser<Node> = oneOf(
@@ -86,9 +80,37 @@ class SingleBinaryOperatorTests {
                 number
             )
         }.run {
-            "1" shouldParseAs "1"
-            "1 + 2" shouldParseAs "(1 + 2)"
-            "1 + 2 + 3" shouldParseAs "((1 + 2) + 3)"
+            "1" shouldBeParsedAs "1"
+            "1 + 2" shouldBeParsedAs "(1 + 2)"
+            "1 + 2 + 3" shouldBeParsedAs "((1 + 2) + 3)"
+        }
+}
+
+class RightAssociativity {
+    @Test fun `single unary operator`() =
+        object : TestGrammar() {
+            val not = inOrder(str("!"), ref { expr }).map { (_, it) -> Not(it) }
+            override val expr: Parser<Node> = oneOf(
+                not,
+                number
+            )
+        }.run {
+            "123" shouldBeParsedAs "123"
+            "!123" shouldBeParsedAs "!(123)"
+            "!!123" shouldBeParsedAs "!(!(123))"
+        }
+
+    @Test fun `single binary operator`() =
+        object : TestGrammar() {
+            val power = inOrder(nonRecRef { expr }, str(" ^ "), ref { expr }).map(::Power.asBinary())
+            override val expr: Parser<Node> = oneOf(
+                power,
+                number
+            )
+        }.run {
+            "1" shouldBeParsedAs "1"
+            "1 ^ 2" shouldBeParsedAs "(1 ^ 2)"
+            "1 ^ 2 ^ 3" shouldBeParsedAs "(1 ^ (2 ^ 3))"
         }
 }
 
@@ -102,30 +124,30 @@ class ParserAssociativityTests : TestGrammar() {
     )
 
     @Test fun `it works`() {
-        "123" shouldParseAs "123"
+        "123" shouldBeParsedAs "123"
 
-        "1 + 2" shouldParseAs "(1 + 2)"
-        "1 + 2 + 3" shouldParseAs "((1 + 2) + 3)"
-        "1 + 2 + 3 + 4" shouldParseAs "(((1 + 2) + 3) + 4)"
+        "1 + 2" shouldBeParsedAs "(1 + 2)"
+        "1 + 2 + 3" shouldBeParsedAs "((1 + 2) + 3)"
+        "1 + 2 + 3 + 4" shouldBeParsedAs "(((1 + 2) + 3) + 4)"
 
-        "1 ^ 2" shouldParseAs "(1 ^ 2)"
-        "1 ^ 2 ^ 3" shouldParseAs "(1 ^ (2 ^ 3))"
-        "1 ^ 2 ^ 3 ^ 4" shouldParseAs "(1 ^ (2 ^ (3 ^ 4)))"
+        "1 ^ 2" shouldBeParsedAs "(1 ^ 2)"
+        "1 ^ 2 ^ 3" shouldBeParsedAs "(1 ^ (2 ^ 3))"
+        "1 ^ 2 ^ 3 ^ 4" shouldBeParsedAs "(1 ^ (2 ^ (3 ^ 4)))"
 
-        "1^2 + 3" shouldParseAs "((1 ^ 2) + 3)"
-        "1 + 2^3" shouldParseAs "(1 + (2 ^ 3))"
-        "1^2 + 3^4" shouldParseAs "((1 ^ 2) + (3 ^ 4))"
+        "1^2 + 3" shouldBeParsedAs "((1 ^ 2) + 3)"
+        "1 + 2^3" shouldBeParsedAs "(1 + (2 ^ 3))"
+        "1^2 + 3^4" shouldBeParsedAs "((1 ^ 2) + (3 ^ 4))"
 
-        "1^2 + 3 + 4" shouldParseAs "(((1 ^ 2) + 3) + 4)"
-        "1 + 2^3 + 4" shouldParseAs "((1 + (2 ^ 3)) + 4)"
-        "1 + 2 + 3^4" shouldParseAs "((1 + 2) + (3 ^ 4))"
+        "1^2 + 3 + 4" shouldBeParsedAs "(((1 ^ 2) + 3) + 4)"
+        "1 + 2^3 + 4" shouldBeParsedAs "((1 + (2 ^ 3)) + 4)"
+        "1 + 2 + 3^4" shouldBeParsedAs "((1 + 2) + (3 ^ 4))"
 
-        "1 + 2^3 + 4^5" shouldParseAs "((1 + (2 ^ 3)) + (4 ^ 5))"
-        "1^2 + 3 + 4^5" shouldParseAs "(((1 ^ 2) + 3) + (4 ^ 5))"
-        "1^2 + 3^4 + 5" shouldParseAs "(((1 ^ 2) + (3 ^ 4)) + 5)"
+        "1 + 2^3 + 4^5" shouldBeParsedAs "((1 + (2 ^ 3)) + (4 ^ 5))"
+        "1^2 + 3 + 4^5" shouldBeParsedAs "(((1 ^ 2) + 3) + (4 ^ 5))"
+        "1^2 + 3^4 + 5" shouldBeParsedAs "(((1 ^ 2) + (3 ^ 4)) + 5)"
 
-        "1 + 2^3^4" shouldParseAs "(1 + (2 ^ (3 ^ 4)))"
-        "1^2^3 + 4" shouldParseAs "((1 ^ (2 ^ 3)) + 4)"
+        "1 + 2^3^4" shouldBeParsedAs "(1 + (2 ^ (3 ^ 4)))"
+        "1^2^3 + 4" shouldBeParsedAs "((1 ^ (2 ^ 3)) + 4)"
     }
 }
 
@@ -143,14 +165,14 @@ class ParserAssociativityAndNestedPrecedenceTests : TestGrammar() {
     )
 
     @Test fun `it works`() {
-        "123" shouldParseAs "123"
-        "1 + 2" shouldParseAs "(1 + 2)"
-        "1 + 2 + 3" shouldParseAs "((1 + 2) + 3)"
-        "1 + 2 + 3 + 4" shouldParseAs "(((1 + 2) + 3) + 4)"
+        "123" shouldBeParsedAs "123"
+        "1 + 2" shouldBeParsedAs "(1 + 2)"
+        "1 + 2 + 3" shouldBeParsedAs "((1 + 2) + 3)"
+        "1 + 2 + 3 + 4" shouldBeParsedAs "(((1 + 2) + 3) + 4)"
 
-        "123[0]" shouldParseAs "123[0]"
-        "123[0][1]" shouldParseAs "123[0][1]"
-        "123[1 + 2]" shouldParseAs "123[(1 + 2)]"
-        "123[1 + 2] + 3" shouldParseAs "(123[(1 + 2)] + 3)"
+        "123[0]" shouldBeParsedAs "123[0]"
+        "123[0][1]" shouldBeParsedAs "123[0][1]"
+        "123[1 + 2]" shouldBeParsedAs "123[(1 + 2)]"
+        "123[1 + 2] + 3" shouldBeParsedAs "(123[(1 + 2)] + 3)"
     }
 }
