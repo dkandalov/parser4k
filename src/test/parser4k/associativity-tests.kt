@@ -178,6 +178,30 @@ class LeftAssociativityTests {
             "1 + (2 + 3) + 4" shouldBeParsedAs "((1 + (2 + 3)) + 4)"
             "1 + 2 + (3 + 4)" shouldBeParsedAs "((1 + 2) + (3 + 4))"
         }
+
+    @Test fun `nested left-associative operator precedence`() =
+        object : TestGrammar() {
+            val plus = inOrder(ref { expr }, str(" + "), ref { expr })
+                .mapLeftAssoc(::Plus.asBinary())
+
+            val accessByIndex = inOrder(ref { expr }, str("["), ref { expr }, str("]"))
+                .mapLeftAssoc { (left, _, right, _) -> AccessByIndex(left, right) }
+
+            override val expr: Parser<Node> = oneOfWithPrecedence(
+                plus,
+                accessByIndex.nestedPrecedence(),
+                number
+            )
+        }.run {
+            "123" shouldBeParsedAs "123"
+            "1 + 2" shouldBeParsedAs "(1 + 2)"
+            "1 + 2 + 3" shouldBeParsedAs "((1 + 2) + 3)"
+
+            "123[0]" shouldBeParsedAs "123[0]"
+            "123[0][1]" shouldBeParsedAs "123[0][1]"
+            "123[1 + 2]" shouldBeParsedAs "123[(1 + 2)]"
+            "123[1 + 2] + 3" shouldBeParsedAs "(123[(1 + 2)] + 3)"
+        }
 }
 
 class RightAssociativityTests {
@@ -336,30 +360,5 @@ class LeftAndRightAssociativityTests : TestGrammar() {
 
         "1 + 2^3^4" shouldBeParsedAs "(1 + (2 ^ (3 ^ 4)))"
         "1^2^3 + 4" shouldBeParsedAs "((1 ^ (2 ^ 3)) + 4)"
-    }
-}
-
-class ParserAssociativityAndNestedPrecedenceTests : TestGrammar() {
-    private val plus = inOrder(ref { expr }, token("+"), ref { expr })
-        .mapLeftAssoc(::Plus.asBinary())
-
-    private val accessByIndex = inOrder(ref { expr }, token("["), ref { expr }, token("]"))
-        .mapLeftAssoc { (left, _, right, _) -> AccessByIndex(left, right) }
-
-    override val expr: Parser<Node> = oneOfWithPrecedence(
-        plus,
-        accessByIndex.nestedPrecedence(),
-        number
-    )
-
-    @Test fun `it works`() {
-        "123" shouldBeParsedAs "123"
-        "1 + 2" shouldBeParsedAs "(1 + 2)"
-        "1 + 2 + 3" shouldBeParsedAs "((1 + 2) + 3)"
-
-        "123[0]" shouldBeParsedAs "123[0]"
-        "123[0][1]" shouldBeParsedAs "123[0][1]"
-        "123[1 + 2]" shouldBeParsedAs "123[(1 + 2)]"
-        "123[1 + 2] + 3" shouldBeParsedAs "(123[(1 + 2)] + 3)"
     }
 }
