@@ -43,6 +43,14 @@ abstract class TestGrammar {
         override fun toString() = "($left : $right)"
     }
 
+    class Or(private val left: Node, private val right: Node) : Node {
+        override fun toString() = "($left || $right)"
+    }
+
+    class And(private val left: Node, private val right: Node) : Node {
+        override fun toString() = "($left && $right)"
+    }
+
     class AccessByIndex(private val left: Node, private val right: Node) : Node {
         override fun toString() = "$left[$right]"
     }
@@ -119,9 +127,33 @@ class LeftAssociativityTests {
             "1 - 2 + 3" shouldBeParsedAs "((1 - 2) + 3)"
             "1 + 2 - 3 + 4" shouldBeParsedAs "(((1 + 2) - 3) + 4)"
         }
+
+    @Test fun `operator precedence`() =
+        object : TestGrammar() {
+            val plus = inOrder(ref { expr }, str(" + "), ref { expr }).mapLeftAssoc(::Plus.asBinary())
+            val or = inOrder(ref { expr }, str(" || "), ref { expr }).mapLeftAssoc(::Or.asBinary())
+            override val expr: Parser<Node> = oneOfWithPrecedence(
+                or,
+                plus,
+                number
+            )
+        }.run {
+            "1" shouldBeParsedAs "1"
+
+            "1 + 2" shouldBeParsedAs "(1 + 2)"
+            "1 + 2 + 3" shouldBeParsedAs "((1 + 2) + 3)"
+
+            "1 || 2" shouldBeParsedAs "(1 || 2)"
+            "1 || 2 || 3" shouldBeParsedAs "((1 || 2) || 3)"
+
+            "1 + 2 || 3" shouldBeParsedAs "((1 + 2) || 3)"
+            "1 || 2 + 3" shouldBeParsedAs "(1 || (2 + 3))"
+            "1 + 2 || 3 + 4" shouldBeParsedAs "((1 + 2) || (3 + 4))"
+            "1 || 2 + 3 || 4" shouldBeParsedAs "((1 || (2 + 3)) || 4)"
+        }
 }
 
-class RightAssociativity {
+class RightAssociativityTests {
     @Test fun `single unary operator`() =
         object : TestGrammar() {
             val preIncrement = inOrder(str("++"), ref { expr }).map { (_, it) -> PreIncrement(it) }
@@ -191,6 +223,30 @@ class RightAssociativity {
             "1 ^ 2 : 3" shouldBeParsedAs "(1 ^ (2 : 3))"
             "1 : 2 ^ 3" shouldBeParsedAs "(1 : (2 ^ 3))"
             "1 ^ 2 : 3 ^ 4" shouldBeParsedAs "(1 ^ (2 : (3 ^ 4)))"
+        }
+
+    @Test fun `operator precedence`() =
+        object : TestGrammar() {
+            val power = inOrder(nonRecRef { expr }, str(" ^ "), ref { expr }).map(::Power.asBinary())
+            val and = inOrder(nonRecRef { expr }, str(" && "), ref { expr }).map(::And.asBinary())
+            override val expr: Parser<Node> = oneOfWithPrecedence(
+                and, // this is on purpose a right-associative AND (even though it's normally left-associative)
+                power,
+                number
+            )
+        }.run {
+            "1" shouldBeParsedAs "1"
+
+            "1 ^ 2" shouldBeParsedAs "(1 ^ 2)"
+            "1 ^ 2 ^ 3" shouldBeParsedAs "(1 ^ (2 ^ 3))"
+
+            "1 && 2" shouldBeParsedAs "(1 && 2)"
+            "1 && 2 && 3" shouldBeParsedAs "(1 && (2 && 3))"
+
+            "1 ^ 2 && 3" shouldBeParsedAs "((1 ^ 2) && 3)"
+            "1 && 2 ^ 3" shouldBeParsedAs "(1 && (2 ^ 3))"
+            "1 ^ 2 && 3 ^ 4" shouldBeParsedAs "((1 ^ 2) && (3 ^ 4))"
+            "1 && 2 ^ 3 && 4" shouldBeParsedAs "(1 && ((2 ^ 3) && 4))"
         }
 }
 
