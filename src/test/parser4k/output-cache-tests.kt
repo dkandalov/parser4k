@@ -9,8 +9,8 @@ class OutputCacheTests {
     private val cache = OutputCache<Node>()
 
     private val integer = regex("\\d+").map { IntLiteral(it) }.with("int", log).with(cache)
-    private val minus = inOrder(ref { expr }, str(" - "), ref { expr }).leftAssoc(::Minus.asBinary()).with("minus", log).with(cache)
-    private val plus = inOrder(ref { expr }, str(" + "), ref { expr }).leftAssoc(::Plus.asBinary()).with("plus", log).with(cache)
+    private val minus = inOrder(ref { expr }, str(" - "), ref { expr }).mapLeftAssoc(::Minus.asBinary()).with("minus", log).with(cache)
+    private val plus = inOrder(ref { expr }, str(" + "), ref { expr }).mapLeftAssoc(::Plus.asBinary()).with("plus", log).with(cache)
 
     private val expr: Parser<Node> = oneOf(plus, minus, integer).reset(cache)
 
