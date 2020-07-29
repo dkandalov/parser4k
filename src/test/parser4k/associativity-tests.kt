@@ -27,6 +27,10 @@ abstract class TestGrammar {
         override fun toString() = "($left + $right)"
     }
 
+    class Minus(private val left: Node, private val right: Node) : Node {
+        override fun toString() = "($left - $right)"
+    }
+
     class Power(private val left: Node, private val right: Node) : Node {
         override fun toString() = "($left ^ $right)"
     }
@@ -84,6 +88,29 @@ class LeftAssociativityTests {
             "1 + 2" shouldBeParsedAs "(1 + 2)"
             "1 + 2 + 3" shouldBeParsedAs "((1 + 2) + 3)"
         }
+
+    @Test fun `two binary operators`() =
+        object : TestGrammar() {
+            val plus = inOrder(ref { expr }, str(" + "), ref { expr }).mapLeftAssoc(::Plus.asBinary())
+            val minus = inOrder(ref { expr }, str(" - "), ref { expr }).mapLeftAssoc(::Minus.asBinary())
+            override val expr: Parser<Node> = oneOf(
+                plus,
+                minus,
+                number
+            )
+        }.run {
+            "1" shouldBeParsedAs "1"
+
+            "1 + 2" shouldBeParsedAs "(1 + 2)"
+            "1 + 2 + 3" shouldBeParsedAs "((1 + 2) + 3)"
+
+            "1 - 2" shouldBeParsedAs "(1 - 2)"
+            "1 - 2 - 3" shouldBeParsedAs "((1 - 2) - 3)"
+
+            "1 + 2 - 3" shouldBeParsedAs "((1 + 2) - 3)"
+            "1 - 2 + 3" shouldBeParsedAs "((1 - 2) + 3)"
+            "1 + 2 - 3 + 4" shouldBeParsedAs "(((1 + 2) - 3) + 4)"
+        }
 }
 
 class RightAssociativity {
@@ -114,7 +141,7 @@ class RightAssociativity {
         }
 }
 
-class ParserAssociativityTests : TestGrammar() {
+class LeftAndRightAssociativityTests : TestGrammar() {
     private val plus = inOrder(nonRecRef { expr }, token("+"), ref { expr }).mapLeftAssoc(::Plus.asBinary())
     private val power = inOrder(nonRecRef { expr }, token("^"), ref { expr }).map(::Power.asBinary())
     override val expr: Parser<Node> = oneOfWithPrecedence(
