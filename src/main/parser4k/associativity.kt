@@ -3,7 +3,7 @@
 package parser4k
 
 fun <T> InOrder<T>.mapLeftAssoc(transform: (List<T>) -> T) = object : Parser<T> {
-    private val leftParser = nonRecRef { (parsers.first()) }
+    private val leftParser = nonRec(parsers.first())
     private val midParsers = parsers.drop(1).dropLast(1)
     private val rightParser = parsers.last()
 
