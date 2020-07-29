@@ -39,6 +39,10 @@ abstract class TestGrammar {
         override fun toString() = "($left ^ $right)"
     }
 
+    class Colon(private val left: Node, private val right: Node) : Node {
+        override fun toString() = "($left : $right)"
+    }
+
     class AccessByIndex(private val left: Node, private val right: Node) : Node {
         override fun toString() = "$left[$right]"
     }
@@ -169,14 +173,24 @@ class RightAssociativity {
     @Test fun `two binary operators`() =
         object : TestGrammar() {
             val power = inOrder(nonRecRef { expr }, str(" ^ "), ref { expr }).map(::Power.asBinary())
+            val colon = inOrder(nonRecRef { expr }, str(" : "), ref { expr }).map(::Colon.asBinary())
             override val expr: Parser<Node> = oneOf(
                 power,
+                colon,
                 number
             )
         }.run {
             "1" shouldBeParsedAs "1"
+
             "1 ^ 2" shouldBeParsedAs "(1 ^ 2)"
             "1 ^ 2 ^ 3" shouldBeParsedAs "(1 ^ (2 ^ 3))"
+
+            "1 : 2" shouldBeParsedAs "(1 : 2)"
+            "1 : 2 : 3" shouldBeParsedAs "(1 : (2 : 3))"
+
+            "1 ^ 2 : 3" shouldBeParsedAs "(1 ^ (2 : 3))"
+            "1 : 2 ^ 3" shouldBeParsedAs "(1 : (2 ^ 3))"
+            "1 ^ 2 : 3 ^ 4" shouldBeParsedAs "(1 ^ (2 : (3 ^ 4)))"
         }
 }
 
