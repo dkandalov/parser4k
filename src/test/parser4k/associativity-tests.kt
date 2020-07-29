@@ -15,8 +15,12 @@ abstract class TestGrammar {
         override fun toString() = value
     }
 
-    class Not(private val expression: Node) : Node {
-        override fun toString() = "!($expression)"
+    class PreIncrement(private val expression: Node) : Node {
+        override fun toString() = "++($expression)"
+    }
+
+    class PreDecrement(private val expression: Node) : Node {
+        override fun toString() = "--($expression)"
     }
 
     class Field(private val expression: Node, private val name: String) : Node {
@@ -116,18 +120,53 @@ class LeftAssociativityTests {
 class RightAssociativity {
     @Test fun `single unary operator`() =
         object : TestGrammar() {
-            val not = inOrder(str("!"), ref { expr }).map { (_, it) -> Not(it) }
+            val preIncrement = inOrder(str("++"), ref { expr }).map { (_, it) -> PreIncrement(it) }
             override val expr: Parser<Node> = oneOf(
-                not,
+                preIncrement,
                 number
             )
         }.run {
             "123" shouldBeParsedAs "123"
-            "!123" shouldBeParsedAs "!(123)"
-            "!!123" shouldBeParsedAs "!(!(123))"
+            "++123" shouldBeParsedAs "++(123)"
+            "++++123" shouldBeParsedAs "++(++(123))"
+        }
+
+    @Test fun `two unary operators`() =
+        object : TestGrammar() {
+            val preIncrement = inOrder(str("++"), ref { expr }).map { (_, it) -> PreIncrement(it) }
+            val preDecrement = inOrder(str("--"), ref { expr }).map { (_, it) -> PreDecrement(it) }
+            override val expr: Parser<Node> = oneOf(
+                preIncrement,
+                preDecrement,
+                number
+            )
+        }.run {
+            "123" shouldBeParsedAs "123"
+
+            "++123" shouldBeParsedAs "++(123)"
+            "++++123" shouldBeParsedAs "++(++(123))"
+
+            "--123" shouldBeParsedAs "--(123)"
+            "----123" shouldBeParsedAs "--(--(123))"
+
+            "++--123" shouldBeParsedAs "++(--(123))"
+            "--++123" shouldBeParsedAs "--(++(123))"
         }
 
     @Test fun `single binary operator`() =
+        object : TestGrammar() {
+            val power = inOrder(nonRecRef { expr }, str(" ^ "), ref { expr }).map(::Power.asBinary())
+            override val expr: Parser<Node> = oneOf(
+                power,
+                number
+            )
+        }.run {
+            "1" shouldBeParsedAs "1"
+            "1 ^ 2" shouldBeParsedAs "(1 ^ 2)"
+            "1 ^ 2 ^ 3" shouldBeParsedAs "(1 ^ (2 ^ 3))"
+        }
+
+    @Test fun `two binary operators`() =
         object : TestGrammar() {
             val power = inOrder(nonRecRef { expr }, str(" ^ "), ref { expr }).map(::Power.asBinary())
             override val expr: Parser<Node> = oneOf(
