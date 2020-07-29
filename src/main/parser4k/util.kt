@@ -1,5 +1,9 @@
 package parser4k
 
+fun oneOf(charRange: CharRange): Parser<String> = oneOf(charRange.map { str(it.toString()) })
+
+fun oneOf(vararg chars: Char): Parser<String> = oneOf(chars.map { str(it.toString()) })
+
 fun <T1, T3, R> ((T1, T3) -> R).asBinary() = { list: List3<T1, *, T3> ->
     this(list.value1, list.value3)
 }

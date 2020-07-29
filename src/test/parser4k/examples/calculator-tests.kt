@@ -3,9 +3,9 @@
 package parser4k.calculatortests
 
 import parser4k.*
-import parser4k.commonparsers.token
 import parser4k.calculatortests.Calculator.Expression.*
 import parser4k.calculatortests.Calculator.Expression.Number
+import parser4k.commonparsers.token
 import java.math.BigDecimal
 import kotlin.test.Test
 
@@ -13,7 +13,7 @@ import kotlin.test.Test
 private object Calculator {
     private val cache = OutputCache<Expression>()
 
-    private val number = regex("\\d+").map { Number(it.toBigDecimal()) }
+    private val number = oneOrMore(oneOf('0'..'9')).map { Number(it.joinToString("").toBigDecimal()) }
     private val paren = inOrder(token("("), ref { expr }, token(")")).map { (_, it, _) -> it }
     private val divide = inOrder(ref { expr }, token("/"), ref { expr }).mapLeftAssoc(::Divide.asBinary()).with(cache)
     private val multiply = inOrder(ref { expr }, token("*"), ref { expr }).mapLeftAssoc(::Multiply.asBinary()).with(cache)
@@ -55,7 +55,7 @@ private object MinimalCalculator {
     val cache = OutputCache<BigDecimal>()
     fun binaryExpr(s: String) = inOrder(ref { expr }, token(s), ref { expr })
 
-    val number = regex("\\d+").map { it.toBigDecimal() }.with(cache)
+    val number = oneOrMore(oneOf('0'..'9')).map { it.joinToString("").toBigDecimal() }
     val paren = inOrder(token("("), ref { expr }, token(")")).skipWrapper().with(cache)
 
     val power = binaryExpr("^").map { (l, _, r) -> l.pow(r.toInt()) }.with(cache)

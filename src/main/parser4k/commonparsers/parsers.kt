@@ -4,9 +4,9 @@ import parser4k.*
 import parser4k.commonparsers.Tokens.whitespace
 
 object Tokens {
-    val whitespace: Parser<String> = regex("[ \\t\\r\\n]")
-    val digit: Parser<String> = regex("[0-9]")
-    val letter: Parser<String> = regex("[a-zA-Z\$_]")
+    val whitespace: Parser<String> = oneOf(' ', '\t', '\r', '\n')
+    val digit: Parser<String> = oneOf('0'..'9')
+    val letter: Parser<String> = oneOf(oneOf('a'..'z'), oneOf('A'..'Z'), oneOf('$', '_'))
 
     val integer: Parser<String> = oneOrMore(digit).map { it.joinToString("") }
 
