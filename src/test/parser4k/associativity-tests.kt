@@ -149,6 +149,30 @@ class LeftAssociativityTests {
             "123[1 + 2]" shouldBeParsedAs "123[(1 + 2)]"
             "123[1 + 2] + 3" shouldBeParsedAs "(123[(1 + 2)] + 3)"
         }
+
+    @Test fun `nested left-associative operator precedence with cache`() =
+        object : TestGrammar() {
+            val plus = inOrder(ref { expr }, str(" + "), ref { expr })
+                .mapLeftAssoc(::Plus.asBinary())
+
+            val accessByIndex = inOrder(ref { expr }, str("["), ref { expr }, str("]"))
+                .mapLeftAssoc { (left, _, right, _) -> AccessByIndex(left, right) }
+
+            override val expr: Parser<Node> = oneOfWithPrecedence(
+                plus.with(cache),
+                accessByIndex.with(cache).nestedPrecedence(),
+                number.with(cache)
+            ).reset(cache)
+        }.run {
+            "123" shouldBeParsedAs "123"
+            "1 + 2" shouldBeParsedAs "(1 + 2)"
+            "1 + 2 + 3" shouldBeParsedAs "((1 + 2) + 3)"
+
+            "123[0]" shouldBeParsedAs "123[0]"
+            "123[0][1]" shouldBeParsedAs "123[0][1]"
+            "123[1 + 2]" shouldBeParsedAs "123[(1 + 2)]"
+            "123[1 + 2] + 3" shouldBeParsedAs "(123[(1 + 2)] + 3)"
+        }
 }
 
 class RightAssociativityTests {
@@ -311,6 +335,7 @@ class LeftAndRightAssociativityTests : TestGrammar() {
 }
 
 abstract class TestGrammar {
+    val cache = OutputCache<Node>()
     val number = regex("\\d+").map(::Number)
     abstract val expr: Parser<Node>
 
