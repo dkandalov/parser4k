@@ -5,7 +5,7 @@ import kotlin.test.Test
 
 class ParserAssociativityTests {
     private val number = regex("\\d+").map(::Number)
-    private val plus = inOrder(nonRecRef { expr }, token("+"), ref { expr }).leftAssoc(::Plus.asBinary())
+    private val plus = inOrder(nonRecRef { expr }, token("+"), ref { expr }).mapLeftAssoc(::Plus.asBinary())
     private val power = inOrder(nonRecRef { expr }, token("^"), ref { expr }).map(::Power.asBinary())
     private val expr: Parser<Node> = oneOfWithPrecedence(plus, power, number)
 
@@ -55,15 +55,18 @@ class ParserAssociativityTests {
 
 class ParserAssociativityAndNestedPrecedenceTests {
     private val number = regex("\\d+").map(::Number)
-    private val plus = inOrder(nonRecRef { expr }, token("+"), ref { expr }).leftAssoc(::Plus.asBinary())
-    private val accessByIndex = inOrder(
-        nonRecRef { expr },
-        token("["),
-        ref { expr },
-        token("]")
-    ).leftAssoc { (left, _, right, _) -> AccessByIndex(left, right) }
 
-    private val expr: Parser<Node> = oneOfWithPrecedence(plus, accessByIndex.nestedPrecedence(), number)
+    private val plus = inOrder(ref { expr }, token("+"), ref { expr })
+        .mapLeftAssoc(::Plus.asBinary())
+
+    private val accessByIndex = inOrder(ref { expr }, token("["), ref { expr }, token("]"))
+        .mapLeftAssoc { (left, _, right, _) -> AccessByIndex(left, right) }
+
+    private val expr: Parser<Node> = oneOfWithPrecedence(
+        plus,
+        accessByIndex.nestedPrecedence(),
+        number
+    )
 
     @Test fun `it works`() {
         "123" shouldParseAs "123"

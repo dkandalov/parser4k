@@ -7,7 +7,8 @@ interface Parser<out T> {
 data class Input(
     val value: String,
     val offset: Int = 0,
-    val injectPayload: InjectPayload? = null
+    val injectPayload: InjectPayload? = null,
+    val leftPayload: Any? = null
 )
 
 data class Output<out T>(

@@ -29,6 +29,13 @@ fun <T2, T3, T4, T5> InOrder6<*, T2, T3, T4, T5, *>.skipWrapper(): Parser<List4<
 fun <T2, T3, T4, T5, T6> InOrder7<*, T2, T3, T4, T5, T6, *>.skipWrapper(): Parser<List5<T2, T3, T4, T5, T6>> = map { (_, it2, it3, it4, it5, it6, _) -> List5(it2, it3, it4, it5, it6) }
 fun <T2, T3, T4, T5, T6, T7> InOrder8<*, T2, T3, T4, T5, T6, T7, *>.skipWrapper(): Parser<List6<T2, T3, T4, T5, T6, T7>> = map { (_, it2, it3, it4, it5, it6, it7, _) -> List6(it2, it3, it4, it5, it6, it7) }
 
+fun <T1, T2, T3> InOrder3<T1, T2, T3>.mapLeftAssoc(transform: (List3<T1, T2, T3>) -> T1): Parser<T1> =
+    InOrder(listOf(parser1, parser2, parser3))
+        .mapLeftAssoc { (it1, it2, it3) -> transform(List3(it1 as T1, it2 as T2, it3 as T3)) } as Parser<T1>
+fun <T1, T2, T3, T4> InOrder4<T1, T2, T3, T4>.mapLeftAssoc(transform: (List4<T1, T2, T3, T4>) -> T1): Parser<T1> =
+    InOrder(listOf(parser1, parser2, parser3, parser4))
+        .mapLeftAssoc { (it1, it2, it3, it4) -> transform(List4(it1 as T1, it2 as T2, it3 as T3, it4 as T4)) } as Parser<T1>
+
 fun <T1, T2, T3> InOrder3<T1, T2, T3>.leftAssoc(transform: (List3<T1, T2, T3>) -> T1): Parser<T1> =
     InOrder(listOf(parser1, parser2, parser3))
         .leftAssoc { (it1, it2, it3) -> transform(List3(it1 as T1, it2 as T2, it3 as T3)) } as Parser<T1>
