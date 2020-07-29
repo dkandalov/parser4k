@@ -7,7 +7,7 @@ class LeftAssociativityTests {
     @Test fun `single unary operator`() =
         object : TestGrammar() {
             val foo = inOrder(ref { expr }, str(".foo")).mapLeftAssoc { (expr, _) -> Field(expr, "foo") }
-            override val expr: Parser<Node> = oneOf(
+            override val expr: Parser<ASTNode> = oneOf(
                 foo,
                 number
             )
@@ -21,7 +21,7 @@ class LeftAssociativityTests {
         object : TestGrammar() {
             val foo = inOrder(ref { expr }, str(".foo")).mapLeftAssoc { (expr, _) -> Field(expr, "foo") }
             val bar = inOrder(ref { expr }, str(".bar")).mapLeftAssoc { (expr, _) -> Field(expr, "bar") }
-            override val expr: Parser<Node> = oneOf(
+            override val expr: Parser<ASTNode> = oneOf(
                 foo,
                 bar,
                 number
@@ -42,7 +42,7 @@ class LeftAssociativityTests {
     @Test fun `single binary operator`() =
         object : TestGrammar() {
             val plus = inOrder(ref { expr }, str(" + "), ref { expr }).mapLeftAssoc(::Plus.asBinary())
-            override val expr: Parser<Node> = oneOf(
+            override val expr: Parser<ASTNode> = oneOf(
                 plus,
                 number
             )
@@ -56,7 +56,7 @@ class LeftAssociativityTests {
         object : TestGrammar() {
             val plus = inOrder(ref { expr }, str(" + "), ref { expr }).mapLeftAssoc(::Plus.asBinary())
             val minus = inOrder(ref { expr }, str(" - "), ref { expr }).mapLeftAssoc(::Minus.asBinary())
-            override val expr: Parser<Node> = oneOf(
+            override val expr: Parser<ASTNode> = oneOf(
                 plus,
                 minus,
                 number
@@ -79,7 +79,7 @@ class LeftAssociativityTests {
         object : TestGrammar() {
             val plus = inOrder(ref { expr }, str(" + "), ref { expr }).mapLeftAssoc(::Plus.asBinary())
             val or = inOrder(ref { expr }, str(" || "), ref { expr }).mapLeftAssoc(::Or.asBinary())
-            override val expr: Parser<Node> = oneOfWithPrecedence(
+            override val expr: Parser<ASTNode> = oneOfWithPrecedence(
                 or,
                 plus,
                 number
@@ -103,7 +103,7 @@ class LeftAssociativityTests {
         object : TestGrammar() {
             val plus = inOrder(ref { expr }, str(" + "), ref { expr }).mapLeftAssoc(::Plus.asBinary())
             val paren = inOrder(str("("), ref { expr }, str(")")).map { (_, it, _) -> it }
-            override val expr: Parser<Node> = oneOfWithPrecedence(
+            override val expr: Parser<ASTNode> = oneOfWithPrecedence(
                 plus,
                 paren.nestedPrecedence(),
                 number
@@ -134,7 +134,7 @@ class LeftAssociativityTests {
             val accessByIndex = inOrder(ref { expr }, str("["), ref { expr }, str("]"))
                 .mapLeftAssoc { (left, _, right, _) -> AccessByIndex(left, right) }
 
-            override val expr: Parser<Node> = oneOfWithPrecedence(
+            override val expr: Parser<ASTNode> = oneOfWithPrecedence(
                 plus,
                 accessByIndex.nestedPrecedence(),
                 number
@@ -158,7 +158,7 @@ class LeftAssociativityTests {
             val accessByIndex = inOrder(ref { expr }, str("["), ref { expr }, str("]"))
                 .mapLeftAssoc { (left, _, right, _) -> AccessByIndex(left, right) }
 
-            override val expr: Parser<Node> = oneOfWithPrecedence(
+            override val expr: Parser<ASTNode> = oneOfWithPrecedence(
                 plus.with(cache),
                 accessByIndex.with(cache).nestedPrecedence(),
                 number.with(cache)
@@ -179,7 +179,7 @@ class RightAssociativityTests {
     @Test fun `single unary operator`() =
         object : TestGrammar() {
             val preIncrement = inOrder(str("++"), ref { expr }).map { (_, it) -> PreIncrement(it) }
-            override val expr: Parser<Node> = oneOf(
+            override val expr: Parser<ASTNode> = oneOf(
                 preIncrement,
                 number
             )
@@ -193,7 +193,7 @@ class RightAssociativityTests {
         object : TestGrammar() {
             val preIncrement = inOrder(str("++"), ref { expr }).map { (_, it) -> PreIncrement(it) }
             val preDecrement = inOrder(str("--"), ref { expr }).map { (_, it) -> PreDecrement(it) }
-            override val expr: Parser<Node> = oneOf(
+            override val expr: Parser<ASTNode> = oneOf(
                 preIncrement,
                 preDecrement,
                 number
@@ -214,7 +214,7 @@ class RightAssociativityTests {
     @Test fun `single binary operator`() =
         object : TestGrammar() {
             val power = inOrder(nonRecRef { expr }, str(" ^ "), ref { expr }).map(::Power.asBinary())
-            override val expr: Parser<Node> = oneOf(
+            override val expr: Parser<ASTNode> = oneOf(
                 power,
                 number
             )
@@ -228,7 +228,7 @@ class RightAssociativityTests {
         object : TestGrammar() {
             val power = inOrder(nonRecRef { expr }, str(" ^ "), ref { expr }).map(::Power.asBinary())
             val colon = inOrder(nonRecRef { expr }, str(" : "), ref { expr }).map(::Colon.asBinary())
-            override val expr: Parser<Node> = oneOf(
+            override val expr: Parser<ASTNode> = oneOf(
                 power,
                 colon,
                 number
@@ -251,7 +251,7 @@ class RightAssociativityTests {
         object : TestGrammar() {
             val power = inOrder(nonRecRef { expr }, str(" ^ "), ref { expr }).map(::Power.asBinary())
             val and = inOrder(nonRecRef { expr }, str(" && "), ref { expr }).map(::And.asBinary())
-            override val expr: Parser<Node> = oneOfWithPrecedence(
+            override val expr: Parser<ASTNode> = oneOfWithPrecedence(
                 and, // this is on purpose a right-associative AND (even though it's normally left-associative)
                 power,
                 number
@@ -275,7 +275,7 @@ class RightAssociativityTests {
         object : TestGrammar() {
             val power = inOrder(nonRecRef { expr }, str(" ^ "), ref { expr }).map(::Power.asBinary())
             val paren = inOrder(str("("), ref { expr }, str(")")).map { (_, it, _) -> it }
-            override val expr: Parser<Node> = oneOfWithPrecedence(
+            override val expr: Parser<ASTNode> = oneOfWithPrecedence(
                 power,
                 paren.nestedPrecedence(),
                 number
@@ -302,7 +302,7 @@ class RightAssociativityTests {
 class LeftAndRightAssociativityTests : TestGrammar() {
     private val plus = inOrder(nonRecRef { expr }, token("+"), ref { expr }).mapLeftAssoc(::Plus.asBinary())
     private val power = inOrder(nonRecRef { expr }, token("^"), ref { expr }).map(::Power.asBinary())
-    override val expr: Parser<Node> = oneOfWithPrecedence(
+    override val expr: Parser<ASTNode> = oneOfWithPrecedence(
         plus,
         power,
         number
@@ -335,55 +335,55 @@ class LeftAndRightAssociativityTests : TestGrammar() {
 }
 
 abstract class TestGrammar {
-    val cache = OutputCache<Node>()
+    val cache = OutputCache<ASTNode>()
     val number = regex("\\d+").map(::Number)
-    abstract val expr: Parser<Node>
+    abstract val expr: Parser<ASTNode>
 
     infix fun String.shouldBeParsedAs(expected: String) = parseWith(expr).toString() shouldEqual expected
 
-    interface Node
+    interface ASTNode
 
-    class Number(private val value: String) : Node {
+    class Number(private val value: String) : ASTNode {
         override fun toString() = value
     }
 
-    class PreIncrement(private val expression: Node) : Node {
+    class PreIncrement(private val expression: ASTNode) : ASTNode {
         override fun toString() = "++($expression)"
     }
 
-    class PreDecrement(private val expression: Node) : Node {
+    class PreDecrement(private val expression: ASTNode) : ASTNode {
         override fun toString() = "--($expression)"
     }
 
-    class Field(private val expression: Node, private val name: String) : Node {
+    class Field(private val expression: ASTNode, private val name: String) : ASTNode {
         override fun toString() = "($expression.$name)"
     }
 
-    class Plus(private val left: Node, private val right: Node) : Node {
+    class Plus(private val left: ASTNode, private val right: ASTNode) : ASTNode {
         override fun toString() = "($left + $right)"
     }
 
-    class Minus(private val left: Node, private val right: Node) : Node {
+    class Minus(private val left: ASTNode, private val right: ASTNode) : ASTNode {
         override fun toString() = "($left - $right)"
     }
 
-    class Power(private val left: Node, private val right: Node) : Node {
+    class Power(private val left: ASTNode, private val right: ASTNode) : ASTNode {
         override fun toString() = "($left ^ $right)"
     }
 
-    class Colon(private val left: Node, private val right: Node) : Node {
+    class Colon(private val left: ASTNode, private val right: ASTNode) : ASTNode {
         override fun toString() = "($left : $right)"
     }
 
-    class Or(private val left: Node, private val right: Node) : Node {
+    class Or(private val left: ASTNode, private val right: ASTNode) : ASTNode {
         override fun toString() = "($left || $right)"
     }
 
-    class And(private val left: Node, private val right: Node) : Node {
+    class And(private val left: ASTNode, private val right: ASTNode) : ASTNode {
         override fun toString() = "($left && $right)"
     }
 
-    class AccessByIndex(private val left: Node, private val right: Node) : Node {
+    class AccessByIndex(private val left: ASTNode, private val right: ASTNode) : ASTNode {
         override fun toString() = "$left[$right]"
     }
 }

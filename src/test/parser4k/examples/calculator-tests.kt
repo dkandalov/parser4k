@@ -10,40 +10,6 @@ import java.math.BigDecimal
 import kotlin.test.Test
 
 
-class ParserPrecedenceTests {
-    private val number = regex("\\d+").map { Number(it.toBigDecimal()) }
-    private val paren = inOrder(token("("), ref { expr }, token(")")).map { (_, it, _) -> it }
-    private val multiply = inOrder(nonRecRef { expr }, token("*"), ref { expr }).map(::Multiply.asBinary())
-    private val plus = inOrder(nonRecRef { expr }, token("+"), ref { expr }).map(::Plus.asBinary())
-
-    private val expr: Parser<Expression> = oneOfWithPrecedence(
-        plus,
-        multiply,
-        paren.nestedPrecedence(),
-        number
-    )
-
-    @Test fun `it works`() {
-        "123" shouldParseAs "123"
-        "1 + 2" shouldParseAs "(1 + 2)"
-        "1 * 2" shouldParseAs "(1 * 2)"
-        "1 + 2 + 3" shouldParseAs "(1 + (2 + 3))"
-        "1 * 2 * 3" shouldParseAs "(1 * (2 * 3))"
-        "1 * 2 + 3" shouldParseAs "((1 * 2) + 3)"
-        "1 + 2 * 3" shouldParseAs "(1 + (2 * 3))"
-
-        "(123)" shouldParseAs "123"
-        "((123))" shouldParseAs "123"
-        "(1 + 2) * 3" shouldParseAs "((1 + 2) * 3)"
-        "1 + (2 * 3)" shouldParseAs "(1 + (2 * 3))"
-        "((1 + 2) * 3)" shouldParseAs "((1 + 2) * 3)"
-
-        "(1 + 2) + (3 + 4)" shouldParseAs "((1 + 2) + (3 + 4))"
-    }
-
-    private infix fun String.shouldParseAs(expected: String) = parseWith(expr).toExpressionString() shouldEqual expected
-}
-
 private object Calculator {
     private val cache = OutputCache<Expression>()
 
