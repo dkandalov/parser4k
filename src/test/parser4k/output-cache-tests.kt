@@ -1,6 +1,5 @@
 package parser4k
 
-import parser4k.commonparsers.token
 import parser4k.OutputCacheTests.Node.*
 import kotlin.test.Test
 
@@ -10,8 +9,8 @@ class OutputCacheTests {
     private val cache = OutputCache<Node>()
 
     private val integer = regex("\\d+").map { IntLiteral(it) }.with("int", log).with(cache)
-    private val minus = inOrder(ref { expr }, token("-"), ref { expr }).leftAssoc(::Minus.asBinary()).with("minus", log).with(cache)
-    private val plus = inOrder(ref { expr }, token("+"), ref { expr }).leftAssoc(::Plus.asBinary()).with("plus", log).with(cache)
+    private val minus = inOrder(ref { expr }, str(" - "), ref { expr }).leftAssoc(::Minus.asBinary()).with("minus", log).with(cache)
+    private val plus = inOrder(ref { expr }, str(" + "), ref { expr }).leftAssoc(::Plus.asBinary()).with("plus", log).with(cache)
 
     private val expr: Parser<Node> = oneOf(plus, minus, integer).reset(cache)
 
@@ -19,6 +18,8 @@ class OutputCacheTests {
         expectMinimalLog { "1".parseWith(expr) }
         expectMinimalLog { "1 + 2".parseWith(expr) }
         expectMinimalLog { "1 - 2".parseWith(expr) }
+        expectMinimalLog { "1 + 2 + 3".parseWith(expr) }
+        expectMinimalLog { "1 - 2 - 3".parseWith(expr) }
         expectMinimalLog { "1 - 2 + 3".parseWith(expr) }
     }
 

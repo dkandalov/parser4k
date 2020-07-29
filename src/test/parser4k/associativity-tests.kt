@@ -3,59 +3,6 @@ package parser4k
 import parser4k.commonparsers.token
 import kotlin.test.Test
 
-abstract class TestGrammar {
-    val number = regex("\\d+").map(::Number)
-    abstract val expr: Parser<Node>
-
-    infix fun String.shouldBeParsedAs(expected: String) = parseWith(expr).toString() shouldEqual expected
-
-    interface Node
-
-    class Number(private val value: String) : Node {
-        override fun toString() = value
-    }
-
-    class PreIncrement(private val expression: Node) : Node {
-        override fun toString() = "++($expression)"
-    }
-
-    class PreDecrement(private val expression: Node) : Node {
-        override fun toString() = "--($expression)"
-    }
-
-    class Field(private val expression: Node, private val name: String) : Node {
-        override fun toString() = "($expression.$name)"
-    }
-
-    class Plus(private val left: Node, private val right: Node) : Node {
-        override fun toString() = "($left + $right)"
-    }
-
-    class Minus(private val left: Node, private val right: Node) : Node {
-        override fun toString() = "($left - $right)"
-    }
-
-    class Power(private val left: Node, private val right: Node) : Node {
-        override fun toString() = "($left ^ $right)"
-    }
-
-    class Colon(private val left: Node, private val right: Node) : Node {
-        override fun toString() = "($left : $right)"
-    }
-
-    class Or(private val left: Node, private val right: Node) : Node {
-        override fun toString() = "($left || $right)"
-    }
-
-    class And(private val left: Node, private val right: Node) : Node {
-        override fun toString() = "($left && $right)"
-    }
-
-    class AccessByIndex(private val left: Node, private val right: Node) : Node {
-        override fun toString() = "$left[$right]"
-    }
-}
-
 class LeftAssociativityTests {
     @Test fun `single unary operator`() =
         object : TestGrammar() {
@@ -360,5 +307,58 @@ class LeftAndRightAssociativityTests : TestGrammar() {
 
         "1 + 2^3^4" shouldBeParsedAs "(1 + (2 ^ (3 ^ 4)))"
         "1^2^3 + 4" shouldBeParsedAs "((1 ^ (2 ^ 3)) + 4)"
+    }
+}
+
+abstract class TestGrammar {
+    val number = regex("\\d+").map(::Number)
+    abstract val expr: Parser<Node>
+
+    infix fun String.shouldBeParsedAs(expected: String) = parseWith(expr).toString() shouldEqual expected
+
+    interface Node
+
+    class Number(private val value: String) : Node {
+        override fun toString() = value
+    }
+
+    class PreIncrement(private val expression: Node) : Node {
+        override fun toString() = "++($expression)"
+    }
+
+    class PreDecrement(private val expression: Node) : Node {
+        override fun toString() = "--($expression)"
+    }
+
+    class Field(private val expression: Node, private val name: String) : Node {
+        override fun toString() = "($expression.$name)"
+    }
+
+    class Plus(private val left: Node, private val right: Node) : Node {
+        override fun toString() = "($left + $right)"
+    }
+
+    class Minus(private val left: Node, private val right: Node) : Node {
+        override fun toString() = "($left - $right)"
+    }
+
+    class Power(private val left: Node, private val right: Node) : Node {
+        override fun toString() = "($left ^ $right)"
+    }
+
+    class Colon(private val left: Node, private val right: Node) : Node {
+        override fun toString() = "($left : $right)"
+    }
+
+    class Or(private val left: Node, private val right: Node) : Node {
+        override fun toString() = "($left || $right)"
+    }
+
+    class And(private val left: Node, private val right: Node) : Node {
+        override fun toString() = "($left && $right)"
+    }
+
+    class AccessByIndex(private val left: Node, private val right: Node) : Node {
+        override fun toString() = "$left[$right]"
     }
 }
