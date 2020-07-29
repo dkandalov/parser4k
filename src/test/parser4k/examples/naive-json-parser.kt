@@ -12,7 +12,7 @@ private object NaiveJsonParser {
     private val array = inOrder(token("["), ref { term }.joinedWith(token(",")), token("]")).skipWrapper()
     private val term: Parser<Any> = oneOf(Tokens.integer, Tokens.string, obj, array)
     private val identifier = inOrder(str("\""), repeat(regex("[^\\s\"]")), str("\"")).skipWrapper().map { it.joinToString("") }
-    private val property = inOrder(identifier, token(":"), term).mapAsBinary(::Pair)
+    private val property = inOrder(identifier, token(":"), term).map { (id, _, term) -> Pair(id, term) }
     private val json = oneOf(obj, array)
 
     fun parse(s: String) = s.parseWith(json)

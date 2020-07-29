@@ -5,8 +5,8 @@ import kotlin.test.Test
 
 class ParserAssociativityTests {
     private val number = regex("\\d+").map(::Number)
-    private val plus = inOrder(nonRecRef { expr }, token("+"), ref { expr }).leftAssocAsBinary(::Plus)
-    private val power = inOrder(nonRecRef { expr }, token("^"), ref { expr }).mapAsBinary(::Power)
+    private val plus = inOrder(nonRecRef { expr }, token("+"), ref { expr }).leftAssoc(::Plus.asBinary())
+    private val power = inOrder(nonRecRef { expr }, token("^"), ref { expr }).map(::Power.asBinary())
     private val expr: Parser<Node> = oneOfWithPrecedence(plus, power, number)
 
     @Test fun `it works`() {
@@ -55,7 +55,7 @@ class ParserAssociativityTests {
 
 class ParserAssociativityAndNestedPrecedenceTests {
     private val number = regex("\\d+").map(::Number)
-    private val plus = inOrder(nonRecRef { expr }, token("+"), ref { expr }).leftAssocAsBinary(::Plus)
+    private val plus = inOrder(nonRecRef { expr }, token("+"), ref { expr }).leftAssoc(::Plus.asBinary())
     private val accessByIndex = inOrder(
         nonRecRef { expr },
         token("["),

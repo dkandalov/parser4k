@@ -36,7 +36,7 @@ class NoneRecursiveParserTests {
 }
 
 class RecursiveParserTests {
-    private val power = inOrder(nonRecRef { expr }, token("^"), ref { expr }).mapAsBinary(::Power)
+    private val power = inOrder(nonRecRef { expr }, token("^"), ref { expr }).map(::Power.asBinary())
     private val expr: Parser<Expression> = oneOf(power, number)
 
     @Test fun `it works`() {
@@ -51,8 +51,8 @@ class RecursiveParserTests {
 
 class ParserPrecedenceTests {
     private val paren = inOrder(token("("), ref { expr }, token(")")).map { (_, it, _) -> it }
-    private val multiply = inOrder(nonRecRef { expr }, token("*"), ref { expr }).mapAsBinary(::Multiply)
-    private val plus = inOrder(nonRecRef { expr }, token("+"), ref { expr }).mapAsBinary(::Plus)
+    private val multiply = inOrder(nonRecRef { expr }, token("*"), ref { expr }).map(::Multiply.asBinary())
+    private val plus = inOrder(nonRecRef { expr }, token("+"), ref { expr }).map(::Plus.asBinary())
 
     private val expr: Parser<Expression> = oneOfWithPrecedence(
         plus,
@@ -87,11 +87,11 @@ private object Calculator {
 
     private val number = regex("\\d+").map { Number(it.toBigDecimal()) }
     private val paren = inOrder(token("("), ref { expr }, token(")")).map { (_, it, _) -> it }
-    private val divide = inOrder(ref { expr }, token("/"), ref { expr }).leftAssocAsBinary(::Divide).with(cache)
-    private val multiply = inOrder(ref { expr }, token("*"), ref { expr }).leftAssocAsBinary(::Multiply).with(cache)
-    private val minus = inOrder(ref { expr }, token("-"), ref { expr }).leftAssocAsBinary(::Minus).with(cache)
-    private val plus = inOrder(ref { expr }, token("+"), ref { expr }).leftAssocAsBinary(::Plus).with(cache)
-    private val power = inOrder(ref { expr }, token("^"), ref { expr }).mapAsBinary(::Power).with(cache)
+    private val divide = inOrder(ref { expr }, token("/"), ref { expr }).leftAssoc(::Divide.asBinary()).with(cache)
+    private val multiply = inOrder(ref { expr }, token("*"), ref { expr }).leftAssoc(::Multiply.asBinary()).with(cache)
+    private val minus = inOrder(ref { expr }, token("-"), ref { expr }).leftAssoc(::Minus.asBinary()).with(cache)
+    private val plus = inOrder(ref { expr }, token("+"), ref { expr }).leftAssoc(::Plus.asBinary()).with(cache)
+    private val power = inOrder(ref { expr }, token("^"), ref { expr }).map(::Power.asBinary()).with(cache)
 
     private val expr: Parser<Expression> = oneOfWithPrecedence(
         oneOf(plus, minus),
