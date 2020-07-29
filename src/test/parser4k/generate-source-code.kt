@@ -4,15 +4,26 @@ import java.io.File
 
 fun main() {
     File("src/main/parser4k/in-order-generated.kt").printWriter().use { writer ->
-        val generator = Generator(println = { writer.println(it) }, maxN = 8)
-        generator.generateHeader()
-        generator.generateSkipFirst()
-        generator.generateSkipLast()
-        generator.generateSkipWrapper()
-        generator.generateLeftAssoc()
-        generator.generateInOrderParsers()
-        generator.generateInOrderFunctions()
-        generator.generateLists()
+        Generator(println = { writer.println(it) }, maxN = 8).apply {
+            generateHeader()
+            generateInOrderParsers()
+            generateInOrderFunctions()
+        }
+    }
+    File("src/main/parser4k/associativity-generated.kt").printWriter().use { writer ->
+        Generator(println = { writer.println(it) }, maxN = 8).apply {
+            generateHeader()
+            generateMapLeftAssoc()
+        }
+    }
+    File("src/main/parser4k/util-generated.kt").printWriter().use { writer ->
+        Generator(println = { writer.println(it) }, maxN = 8).apply {
+            generateHeader()
+            generateSkipFirst()
+            generateSkipLast()
+            generateSkipWrapper()
+            generateLists()
+        }
     }
 }
 
@@ -71,7 +82,7 @@ private fun Generator.generateSkipWrapper() {
     println("")
 }
 
-private fun Generator.generateLeftAssoc() {
+private fun Generator.generateMapLeftAssoc() {
     // For example:
     // fun <T1, T2, T3> InOrder3<T1, T2, T3>.leftAssoc(transform: (List3<T1, T2, T3>) -> T1): Parser<T1> =
     //    InOrder(listOf(parser1, parser2, parser3))
