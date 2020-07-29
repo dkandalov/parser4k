@@ -15,7 +15,7 @@ private object ExpressionLang {
     private val cache = OutputCache<Expr>()
 
     private fun binaryExpr(tokenString: String, f: (Expr, Expr) -> Expr) =
-        inOrder(ref { expr }, token(tokenString), ref { expr }).leftAssoc(f.asBinary()).with(cache)
+        inOrder(ref { expr }, token(tokenString), ref { expr }).mapLeftAssoc(f.asBinary()).with(cache)
 
     private fun unaryExpr(tokenString: String, f: (Expr) -> Expr) =
         inOrder(token(tokenString), ref { expr }).map { (_, it) -> f(it) }.with(cache)
@@ -53,7 +53,7 @@ private object ExpressionLang {
     private val paren = inOrder(token("("), ref { expr }, token(")")).skipWrapper().with(cache)
 
     private val dot = inOrder(ref { expr }, token("."), ref { expr })
-        .leftAssoc(::Dot.asBinary()).with(cache)
+        .mapLeftAssoc(::Dot.asBinary()).with(cache)
 
     private val fieldAccess = Tokens.identifier.map(::FieldAccess).with(cache)
 

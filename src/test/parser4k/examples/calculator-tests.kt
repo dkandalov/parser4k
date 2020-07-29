@@ -49,10 +49,10 @@ private object Calculator {
 
     private val number = regex("\\d+").map { Number(it.toBigDecimal()) }
     private val paren = inOrder(token("("), ref { expr }, token(")")).map { (_, it, _) -> it }
-    private val divide = inOrder(ref { expr }, token("/"), ref { expr }).leftAssoc(::Divide.asBinary()).with(cache)
-    private val multiply = inOrder(ref { expr }, token("*"), ref { expr }).leftAssoc(::Multiply.asBinary()).with(cache)
-    private val minus = inOrder(ref { expr }, token("-"), ref { expr }).leftAssoc(::Minus.asBinary()).with(cache)
-    private val plus = inOrder(ref { expr }, token("+"), ref { expr }).leftAssoc(::Plus.asBinary()).with(cache)
+    private val divide = inOrder(ref { expr }, token("/"), ref { expr }).mapLeftAssoc(::Divide.asBinary()).with(cache)
+    private val multiply = inOrder(ref { expr }, token("*"), ref { expr }).mapLeftAssoc(::Multiply.asBinary()).with(cache)
+    private val minus = inOrder(ref { expr }, token("-"), ref { expr }).mapLeftAssoc(::Minus.asBinary()).with(cache)
+    private val plus = inOrder(ref { expr }, token("+"), ref { expr }).mapLeftAssoc(::Plus.asBinary()).with(cache)
     private val power = inOrder(ref { expr }, token("^"), ref { expr }).map(::Power.asBinary()).with(cache)
 
     private val expr: Parser<Expression> = oneOfWithPrecedence(
@@ -84,11 +84,11 @@ private object MinimalCalculator {
     val paren = inOrder(token("("), ref { expr }, token(")")).skipWrapper().with(cache)
 
     val power = binaryExpr("^").map { (l, _, r) -> l.pow(r.toInt()) }.with(cache)
-    val divide = binaryExpr("/").leftAssoc { (l, _, r) -> l.divide(r) }.with(cache)
-    val multiply = binaryExpr("*").leftAssoc { (l, _, r) -> l * r }.with(cache)
+    val divide = binaryExpr("/").mapLeftAssoc { (l, _, r) -> l.divide(r) }.with(cache)
+    val multiply = binaryExpr("*").mapLeftAssoc { (l, _, r) -> l * r }.with(cache)
 
-    val minus = binaryExpr("-").leftAssoc { (l, _, r) -> l - r }.with(cache)
-    val plus = binaryExpr("+").leftAssoc { (l, _, r) -> l + r }.with(cache)
+    val minus = binaryExpr("-").mapLeftAssoc { (l, _, r) -> l - r }.with(cache)
+    val plus = binaryExpr("+").mapLeftAssoc { (l, _, r) -> l + r }.with(cache)
 
     val expr: Parser<BigDecimal> = oneOfWithPrecedence(
         oneOf(plus, minus),
