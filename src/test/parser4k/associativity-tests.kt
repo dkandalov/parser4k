@@ -316,20 +316,20 @@ class LeftAndRightAssociativityTests : TestGrammar() {
         "1 ^ 2" shouldBeParsedAs "(1 ^ 2)"
         "1 ^ 2 ^ 3" shouldBeParsedAs "(1 ^ (2 ^ 3))"
 
-        "1^2 + 3" shouldBeParsedAs "((1 ^ 2) + 3)"
-        "1 + 2^3" shouldBeParsedAs "(1 + (2 ^ 3))"
-        "1^2 + 3^4" shouldBeParsedAs "((1 ^ 2) + (3 ^ 4))"
+        "1 ^ 2 + 3" shouldBeParsedAs "((1 ^ 2) + 3)"
+        "1 + 2 ^ 3" shouldBeParsedAs "(1 + (2 ^ 3))"
+        "1 ^ 2 + 3 ^ 4" shouldBeParsedAs "((1 ^ 2) + (3 ^ 4))"
 
-        "1^2 + 3 + 4" shouldBeParsedAs "(((1 ^ 2) + 3) + 4)"
-        "1 + 2^3 + 4" shouldBeParsedAs "((1 + (2 ^ 3)) + 4)"
-        "1 + 2 + 3^4" shouldBeParsedAs "((1 + 2) + (3 ^ 4))"
+        "1 ^ 2 + 3 + 4" shouldBeParsedAs "(((1 ^ 2) + 3) + 4)"
+        "1 + 2 ^ 3 + 4" shouldBeParsedAs "((1 + (2 ^ 3)) + 4)"
+        "1 + 2 + 3 ^ 4" shouldBeParsedAs "((1 + 2) + (3 ^ 4))"
 
-        "1 + 2^3 + 4^5" shouldBeParsedAs "((1 + (2 ^ 3)) + (4 ^ 5))"
-        "1^2 + 3 + 4^5" shouldBeParsedAs "(((1 ^ 2) + 3) + (4 ^ 5))"
-        "1^2 + 3^4 + 5" shouldBeParsedAs "(((1 ^ 2) + (3 ^ 4)) + 5)"
+        "1 + 2 ^ 3 + 4 ^ 5" shouldBeParsedAs "((1 + (2 ^ 3)) + (4 ^ 5))"
+        "1 ^ 2 + 3 + 4 ^ 5" shouldBeParsedAs "(((1 ^ 2) + 3) + (4 ^ 5))"
+        "1 ^ 2 + 3 ^ 4 + 5" shouldBeParsedAs "(((1 ^ 2) + (3 ^ 4)) + 5)"
 
-        "1 + 2^3^4" shouldBeParsedAs "(1 + (2 ^ (3 ^ 4)))"
-        "1^2^3 + 4" shouldBeParsedAs "((1 ^ (2 ^ 3)) + 4)"
+        "1 + 2 ^ 3 ^ 4" shouldBeParsedAs "(1 + (2 ^ (3 ^ 4)))"
+        "1 ^ 2 ^ 3 + 4" shouldBeParsedAs "((1 ^ (2 ^ 3)) + 4)"
     }
 }
 
