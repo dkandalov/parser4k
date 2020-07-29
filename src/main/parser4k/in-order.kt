@@ -1,10 +1,14 @@
 package parser4k
 
 class InOrder<T>(val parsers: List<Parser<T>>) : Parser<List<T>> {
+    private val allParsers = parsers.mapIndexed { index, parser ->
+        if (index == 0) nonRec(parser) else parser
+    }
+
     override fun parse(input: Input): Output<List<T>>? {
-        val payload = ArrayList<T>(parsers.size)
+        val payload = ArrayList<T>(allParsers.size)
         var nextInput = input
-        parsers.forEach { parser ->
+        allParsers.forEach { parser ->
             val output = parser.parse(nextInput) ?: return null
             nextInput = output.nextInput
             payload.add(output.payload)

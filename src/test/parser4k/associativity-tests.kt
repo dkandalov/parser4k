@@ -212,7 +212,7 @@ class RightAssociativityTests {
 
     @Test fun `single binary operator`() =
         object : TestGrammar() {
-            val power = inOrder(nonRecRef { expr }, str(" ^ "), ref { expr }).map(::Power.asBinary())
+            val power = inOrder(ref { expr }, str(" ^ "), ref { expr }).map(::Power.asBinary())
             override val expr: Parser<ASTNode> = oneOf(
                 power,
                 number
@@ -225,8 +225,8 @@ class RightAssociativityTests {
 
     @Test fun `two binary operators`() =
         object : TestGrammar() {
-            val power = inOrder(nonRecRef { expr }, str(" ^ "), ref { expr }).map(::Power.asBinary())
-            val colon = inOrder(nonRecRef { expr }, str(" : "), ref { expr }).map(::Colon.asBinary())
+            val power = inOrder(ref { expr }, str(" ^ "), ref { expr }).map(::Power.asBinary())
+            val colon = inOrder(ref { expr }, str(" : "), ref { expr }).map(::Colon.asBinary())
             override val expr: Parser<ASTNode> = oneOf(
                 power,
                 colon,
@@ -248,8 +248,8 @@ class RightAssociativityTests {
 
     @Test fun `operator precedence`() =
         object : TestGrammar() {
-            val power = inOrder(nonRecRef { expr }, str(" ^ "), ref { expr }).map(::Power.asBinary())
-            val and = inOrder(nonRecRef { expr }, str(" && "), ref { expr }).map(::And.asBinary())
+            val power = inOrder(ref { expr }, str(" ^ "), ref { expr }).map(::Power.asBinary())
+            val and = inOrder(ref { expr }, str(" && "), ref { expr }).map(::And.asBinary())
             override val expr: Parser<ASTNode> = oneOfWithPrecedence(
                 and, // this is on purpose a right-associative AND (even though it's normally left-associative)
                 power,
@@ -272,7 +272,7 @@ class RightAssociativityTests {
 
     @Test fun `nested operator precedence`() =
         object : TestGrammar() {
-            val power = inOrder(nonRecRef { expr }, str(" ^ "), ref { expr }).map(::Power.asBinary())
+            val power = inOrder(ref { expr }, str(" ^ "), ref { expr }).map(::Power.asBinary())
             val paren = inOrder(str("("), ref { expr }, str(")")).map { (_, it, _) -> it }
             override val expr: Parser<ASTNode> = oneOfWithPrecedence(
                 power,
@@ -299,8 +299,8 @@ class RightAssociativityTests {
 }
 
 class LeftAndRightAssociativityTests : TestGrammar() {
-    private val plus = inOrder(nonRecRef { expr }, str(" + "), ref { expr }).mapLeftAssoc(::Plus.asBinary())
-    private val power = inOrder(nonRecRef { expr }, str(" ^ "), ref { expr }).map(::Power.asBinary())
+    private val plus = inOrder(ref { expr }, str(" + "), ref { expr }).mapLeftAssoc(::Plus.asBinary())
+    private val power = inOrder(ref { expr }, str(" ^ "), ref { expr }).map(::Power.asBinary())
     override val expr: Parser<ASTNode> = oneOfWithPrecedence(
         plus,
         power,
