@@ -335,7 +335,7 @@ class LeftAndRightAssociativityTests : TestGrammar() {
 
 abstract class TestGrammar {
     val cache = OutputCache<ASTNode>()
-    val number = repeat(oneOf('0'..'9'), atLeast = 1).map { Number(it.joinToString("")) }
+    val number = oneOrMore(oneOf('0'..'9')).map { Number(it.joinToString("")) }
     abstract val expr: Parser<ASTNode>
 
     infix fun String.shouldBeParsedAs(expected: String) = parseWith(expr).toString() shouldEqual expected

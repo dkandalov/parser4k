@@ -1,17 +1,20 @@
 package parser4k.examples
 
 import parser4k.*
-import parser4k.examples.NaiveJsonParser.parse
-import parser4k.commonparsers.Tokens
+import parser4k.commonparsers.Tokens.digit
+import parser4k.commonparsers.Tokens.integer
+import parser4k.commonparsers.Tokens.letter
+import parser4k.commonparsers.Tokens.string
 import parser4k.commonparsers.joinedWith
 import parser4k.commonparsers.token
+import parser4k.examples.NaiveJsonParser.parse
 import kotlin.test.Test
 
 private object NaiveJsonParser {
     private val obj = inOrder(token("{"), ref { property }.joinedWith(token(",")), token("}")).skipWrapper().map { it.toMap() }
     private val array = inOrder(token("["), ref { term }.joinedWith(token(",")), token("]")).skipWrapper()
-    private val term: Parser<Any> = oneOf(Tokens.integer, Tokens.string, obj, array)
-    private val identifier = inOrder(str("\""), repeat(regex("[^\\s\"]")), str("\"")).skipWrapper().map { it.joinToString("") }
+    private val term: Parser<Any> = oneOf(integer, string, obj, array)
+    private val identifier = inOrder(str("\""), repeat(oneOf(digit, letter, noneOf('"'))), str("\"")).skipWrapper().map { it.joinToString("") }
     private val property = inOrder(identifier, token(":"), term).map { (id, _, term) -> Pair(id, term) }
     private val json = oneOf(obj, array)
 
