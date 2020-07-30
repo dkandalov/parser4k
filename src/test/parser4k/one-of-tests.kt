@@ -2,7 +2,7 @@ package parser4k
 
 import kotlin.test.Test
 
-class OneOfParserTests {
+class OneOfTests {
     @Test fun `it works`() {
         val abParser = oneOf(str("a"), str("b"))
 

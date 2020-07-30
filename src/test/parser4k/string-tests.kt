@@ -2,7 +2,7 @@ package parser4k
 
 import kotlin.test.Test
 
-class StringParserTests {
+class StringTests {
     @Test fun `it works`() {
         val parser = str("foo")
 

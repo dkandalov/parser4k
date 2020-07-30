@@ -2,7 +2,7 @@ package parser4k
 
 import kotlin.test.Test
 
-class RepeatParserTests {
+class RepeatTests {
     @Test fun `it works`() {
         // not enough input
         repeat(str("a"), atLeast = 1).invoke(Input("")) shouldEqual null

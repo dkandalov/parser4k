@@ -2,7 +2,7 @@ package parser4k
 
 import kotlin.test.Test
 
-class InOrderParserTests {
+class InOrderTests {
     @Test fun `it works`() {
         val abParser = inOrder(str("a"), str("b"))
 
