@@ -8,7 +8,7 @@ plugins {
     `maven-publish`
 }
 group = "parser4k"
-version = "0.01"
+version = "0.02"
 
 repositories {
     mavenCentral()

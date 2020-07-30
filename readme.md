@@ -17,7 +17,7 @@ repositories {
     maven { setUrl("https://dl.bintray.com/dkandalov/maven") }
 }
 dependencies {
-    implementation "parser4k:parser4k:0.01"
+    implementation "parser4k:parser4k:0.02"
 }
 ```
  
@@ -53,10 +53,9 @@ object MinimalCalculator {
 ### Core concepts
  - `Parser` is an object which takes `Input`, attempts to extract some useful data from it and 
    returns `Output` if successful or `null` if `Parser` wasn't able to consume any data.
+   `Parser`s can be mapped with `.map()` function similar to how collections are mapped in Kotlin.
  - `Input` is an immutable object which contains input string and offset, where offset indicates how many characters has been consumed from the string.
  - `Output` is an immutable object which contains payload (i.e. useful data extracted from input) and `Input` with shifted offset (to be used by the next `Parser`).
- 
-`Parser`s can be "mapped" with `.map()` function similar to how collections are mapped in Kotlin.
 
 
 ### Core parsers
@@ -73,6 +72,7 @@ object MinimalCalculator {
  - `.with(outputCache)` - cache parsers output (should be used with any non-toy parser combinator to avoid exponential time complexity)
  - `.reset(outputCache)` - should be used on the main parser to reset output cache after processing each input
  - `.with("parserId", parsingLog)` - wrap parser with a logger (can be useful for debugging/understanding what parser is doing, e.g. see `LogTests.kt`) 
+
 
 ### Common parsers
  - `.joinedWith()` - wrap parser so that it matches multiple times with specified separator (e.g. a list of arguments to a function separated by commas)
