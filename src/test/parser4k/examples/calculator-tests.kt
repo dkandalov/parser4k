@@ -55,7 +55,7 @@ private object MinimalCalculator {
     val cache = OutputCache<BigDecimal>()
     fun binaryExpr(s: String) = inOrder(ref { expr }, token(s), ref { expr })
 
-    val number = oneOrMore(oneOf('0'..'9')).map { it.joinToString("").toBigDecimal() }
+    val number = oneOrMore(oneOf('0'..'9')).map { it.joinToString("").toBigDecimal() }.with(cache)
     val paren = inOrder(token("("), ref { expr }, token(")")).skipWrapper().with(cache)
 
     val power = binaryExpr("^").map { (l, _, r) -> l.pow(r.toInt()) }.with(cache)
