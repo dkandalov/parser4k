@@ -7,15 +7,15 @@ class OneOfParserTests {
         val abParser = oneOf(str("a"), str("b"))
 
         // not enough input
-        abParser.parse(Input("")) shouldEqual null
-        abParser.parse(Input("a", offset = 1)) shouldEqual null
-        abParser.parse(Input("b", offset = 1)) shouldEqual null
+        abParser.invoke(Input("")) shouldEqual null
+        abParser.invoke(Input("a", offset = 1)) shouldEqual null
+        abParser.invoke(Input("b", offset = 1)) shouldEqual null
 
         // input mismatch
-        abParser.parse(Input("c")) shouldEqual null
+        abParser.invoke(Input("c")) shouldEqual null
 
         // match
-        abParser.parse(Input("ab")) shouldEqual Output("a", Input("ab", offset = 1))
-        abParser.parse(Input("ba")) shouldEqual Output("b", Input("ba", offset = 1))
+        abParser.invoke(Input("ab")) shouldEqual Output("a", Input("ab", offset = 1))
+        abParser.invoke(Input("ba")) shouldEqual Output("b", Input("ba", offset = 1))
     }
 }
