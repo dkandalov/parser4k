@@ -7,9 +7,9 @@ fun <T> ref(f: () -> Parser<T>): Parser<T> = object : Parser<T> {
     override fun invoke(input: Input) = parser.invoke(input)
 }
 
-fun <T> nonRecRef(f: () -> Parser<T>): Parser<T> = nonRec(ref(f))
+fun <T> KProperty0<Parser<T>>.ref(): Parser<T> = ref { get() }
 
-fun <T> nonRec(parser: Parser<T>): Parser<T> = object : Parser<T> {
+fun <T> nonRecursive(parser: Parser<T>): Parser<T> = object : Parser<T> {
     val offsets: HashSet<Int> = HashSet()
 
     override fun invoke(input: Input): Output<T>? {
@@ -19,7 +19,3 @@ fun <T> nonRec(parser: Parser<T>): Parser<T> = object : Parser<T> {
         return output
     }
 }
-
-fun <T> KProperty0<Parser<T>>.ref(): Parser<T> = ref { get() }
-
-fun <T> KProperty0<Parser<T>>.nonRecRef(): Parser<T> = nonRecRef { get() }

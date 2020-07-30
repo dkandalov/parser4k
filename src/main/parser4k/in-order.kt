@@ -2,7 +2,7 @@ package parser4k
 
 class InOrder<T>(val parsers: List<Parser<T>>) : Parser<List<T>> {
     private val allParsers = parsers.mapIndexed { index, parser ->
-        if (index == 0) nonRec(parser) else parser
+        if (index == 0) nonRecursive(parser) else parser
     }
 
     override fun invoke(input: Input): Output<List<T>>? {
