@@ -91,6 +91,7 @@ class CalculatorTests {
 
     @Test fun `large valid input`() = listOf(Calculator::evaluate, MinimalCalculator::evaluate).forEach { evaluate ->
         evaluate(List(1000) { "1" }.joinToString("+")) shouldEqual BigDecimal(1000)
+        evaluate(List(1000) { "1" }.joinToString("^")) shouldEqual BigDecimal(1)
     }
 
     @Test fun `invalid input`() {
